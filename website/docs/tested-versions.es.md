@@ -2,6 +2,8 @@
 
 Los valores siguientes reflejan una **migración de laboratorio** en AWS. Sustituir los placeholders de los overlays antes de aplicar manifiestos. Este repositorio no incluye hostnames de sandbox ni IDs de EFS.
 
+Matriz de producto: [Supported Configurations](https://access.redhat.com/articles/2798521).
+
 ## Entorno
 
 | Capa | Valor probado |
@@ -23,10 +25,10 @@ En laboratorios AWS donde el almacenamiento por defecto es solo RWO, hace falta 
 
 ## Matriz soportada (referencia)
 
-Confirmar siempre en [Supported Configurations](https://access.redhat.com/articles/2798521). Para 3scale 2.16:
+Para 3scale 2.16, Red Hat documenta:
 
 - OpenShift: 4.14, 4.16–4.19 (4.20+ en micros posteriores de 2.16)
 - PostgreSQL: 14, 15 (preflight del system DB exige ≥ 15.0)
 - Redis: 7.2 (dos instancias)
 
-Probar en OpenShift 4.19 valida el camino a 2.16 aunque producción use un minor anterior soportado. Actualizar OpenShift **después** de la migración 3scale, no en la misma ventana de mantenimiento.
+Probar en OpenShift 4.19 valida el camino a 2.16 aunque producción use un minor anterior soportado. Actualizar OpenShift **después** de la migración 3scale. No combinar esos upgrades en la misma ventana de mantenimiento.

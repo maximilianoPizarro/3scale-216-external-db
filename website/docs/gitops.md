@@ -1,6 +1,6 @@
 # GitOps and RHACM
 
-Two phases. **Do not** apply the operator and external databases at the same time on an empty cluster: APIManager 2.15 must create embedded PostgreSQL/Redis first; `3scale-db` resources enter during the externalization window.
+Use two phases. Do **not** apply the 3scale operator and in-cluster databases at the same time on an empty cluster. APIManager 2.15 must create embedded PostgreSQL and Redis first. Resources in `3scale-db` enter during the externalization window.
 
 Replace placeholders before sync:
 
@@ -8,9 +8,9 @@ Replace placeholders before sync:
 - `REPLACE_WILDCARD_DOMAIN` in `kustomize/overlays/lab-apimanager/kustomization.yaml`
 - `REPLACE_EFS_FILESYSTEM_ID` in `kustomize/overlays/lab-efs/kustomization.yaml`
 
-Before APIManager, you need an **RWX** StorageClass. On AWS lab: create the EFS filesystem, set `fileSystemId` in `kustomize/overlays/lab-efs`, and apply that overlay (cluster-scoped; not in the ApplicationSet).
+Before the APIManager, you need an **RWX** StorageClass. On AWS lab: create the EFS filesystem, set `fileSystemId` in `kustomize/overlays/lab-efs`, and apply that overlay (cluster-scoped; it is not in the ApplicationSet).
 
-## Phase 1 — operator 2.15 + APIManager
+## Phase 1 — 3scale operator 2.15 + APIManager
 
 ```bash
 oc apply -k gitops/
@@ -39,16 +39,16 @@ oc apply -k gitops/external-db
 | 2 | `threescale-ext-redis-backend` | `kustomize/bases/redis-backend` |
 | 2 | `threescale-ext-redis-system` | `kustomize/bases/redis-system` |
 
-Destination: `3scale-db`. `prune: false` to avoid deleting PVCs.
+Destination: `3scale-db`. `prune: false` avoids deleting PVCs.
 
-After Redis restore, change `redis-config.path` to `kustomize/bases/redis-config-persist` in the external-db ApplicationSet.
+After Redis restore, change `redis-config.path` to `kustomize/bases/redis-config-persist` in the external-db ApplicationSet. Leave it there on day 2. `selfHeal: true` reverts a manual ConfigMap edit. See [Day 2 operations](day-2.md).
 
 ## RHACM (hub)
 
 Same separation:
 
 ```bash
-oc apply -k gitops/rhacm/              # Placement + operator PUSH
+oc apply -k gitops/rhacm/              # Placement + 3scale operator PUSH
 oc apply -k gitops/rhacm/external-db   # prod overlay → 3scale-db on managed cluster
 ```
 

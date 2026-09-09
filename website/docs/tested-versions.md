@@ -1,6 +1,8 @@
 # Tested versions
 
-Values below reflect a **lab migration** on AWS. Replace placeholders in overlays before applying manifests. No sandbox hostnames or EFS IDs are committed to this repository.
+Values below reflect a **lab migration** on AWS. Replace placeholders in overlays before you apply manifests. This repository does not commit sandbox hostnames or EFS IDs.
+
+Product matrix: [Supported Configurations](https://access.redhat.com/articles/2798521).
 
 ## Environment
 
@@ -19,14 +21,14 @@ Values below reflect a **lab migration** on AWS. Replace placeholders in overlay
 | External PostgreSQL / Redis PVCs | `gp3-csi` | ReadWriteOnce |
 | `system-storage` (3scale file storage) | `efs-sc` (EFS CSI driver) | ReadWriteMany |
 
-On AWS lab clusters where the default block storage is RWO only, **EFS CSI** is required for the `system-storage` PVC. See [Install 3scale 2.15 (lab)](install-lab.md).
+On AWS lab clusters where default block storage is RWO only, you need **EFS CSI** for the `system-storage` PVC. See [Install 3scale 2.15 (lab)](install-lab.md).
 
 ## Supported matrix (reference)
 
-Always confirm against [Supported Configurations](https://access.redhat.com/articles/2798521). For 3scale 2.16:
+For 3scale 2.16, Red Hat documents:
 
 - OpenShift: 4.14, 4.16–4.19 (4.20+ in later 2.16 micro releases)
 - PostgreSQL: 14, 15 (system DB preflight requires ≥ 15.0)
 - Redis: 7.2 (two instances)
 
-Testing on OpenShift 4.19 validates the 2.16 path even when production runs an earlier supported minor. Upgrade OpenShift **after** the 3scale migration, not in the same maintenance window.
+Testing on OpenShift 4.19 validates the 2.16 path even when production runs an earlier supported minor. Upgrade OpenShift **after** the 3scale migration. Do not combine those upgrades in one maintenance window.

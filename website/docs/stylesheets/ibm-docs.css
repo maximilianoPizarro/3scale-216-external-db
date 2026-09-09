@@ -1,0 +1,315 @@
+/* IBM-style documentation layout (Carbon type scale + gray theme).
+   IBM Plex is OFL. No IBM 8-bar logo. No IBM Blue 60 / Magenta. */
+
+:root {
+  --doc-text: #161616;
+  --doc-text-secondary: #525252;
+  --doc-bg: #f4f4f4;
+  --doc-layer: #ffffff;
+  --doc-border: #e0e0e0;
+  --doc-hover: #e8e8e8;
+  --doc-code-bg: #f4f4f4;
+  --doc-header-rule: #161616;
+  --doc-warn: #8e6a00;
+  --doc-danger: #750e13;
+}
+
+[data-md-color-scheme="slate"] {
+  --doc-text: #f4f4f4;
+  --doc-text-secondary: #c6c6c6;
+  --doc-bg: #161616;
+  --doc-layer: #262626;
+  --doc-border: #393939;
+  --doc-hover: #393939;
+  --doc-code-bg: #262626;
+  --doc-header-rule: #f4f4f4;
+  --doc-warn: #d2a106;
+  --doc-danger: #ff8389;
+}
+
+/* Carbon gray tokens as Material CSS variables (not IBM Blue). */
+[data-md-color-scheme="default"] {
+  --md-default-fg-color: #161616;
+  --md-default-fg-color--light: #525252;
+  --md-default-bg-color: #f4f4f4;
+  --md-primary-fg-color: #161616;
+  --md-primary-bg-color: #ffffff;
+  --md-accent-fg-color: #525252;
+  --md-typeset-a-color: #161616;
+  --md-code-bg-color: #f4f4f4;
+  --md-footer-bg-color: #e0e0e0;
+  --md-footer-fg-color: #161616;
+}
+
+[data-md-color-scheme="slate"] {
+  --md-default-fg-color: #f4f4f4;
+  --md-default-fg-color--light: #c6c6c6;
+  --md-default-bg-color: #161616;
+  --md-primary-fg-color: #f4f4f4;
+  --md-primary-bg-color: #161616;
+  --md-accent-fg-color: #c6c6c6;
+  --md-typeset-a-color: #f4f4f4;
+  --md-code-bg-color: #262626;
+}
+
+html {
+  font-size: 100%;
+}
+
+body {
+  background-color: var(--doc-bg);
+}
+
+/* Header: light bar + 3px top rule (IBM Docs uses a rule; here it is gray, not blue). */
+.md-header {
+  background-color: var(--doc-layer);
+  color: var(--doc-text);
+  box-shadow: none;
+  border-bottom: 1px solid var(--doc-border);
+}
+
+.md-header::before {
+  content: "";
+  display: block;
+  height: 3px;
+  background: var(--doc-header-rule);
+}
+
+.md-header__title,
+.md-header .md-header__button,
+.md-header .md-source,
+.md-header .md-source__repository,
+.md-header .md-tabs {
+  color: var(--doc-text);
+}
+
+.md-header .md-search__input {
+  background-color: var(--doc-bg);
+  color: var(--doc-text);
+  border-radius: 0;
+}
+
+.md-header .md-search__input::placeholder {
+  color: var(--doc-text-secondary);
+}
+
+.md-header .md-search__form {
+  border-radius: 0;
+}
+
+.md-header .md-header__source .md-source {
+  opacity: 1;
+}
+
+.md-search-result__meta {
+  background-color: var(--doc-bg);
+  color: var(--doc-text-secondary);
+}
+
+/* Sidebar */
+.md-nav__title,
+.md-nav__item {
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+
+.md-nav__link {
+  color: var(--doc-text) !important;
+}
+
+.md-nav__link:hover {
+  background-color: var(--doc-hover);
+  color: var(--doc-text) !important;
+}
+
+.md-nav__item .md-nav__link--active,
+.md-nav__link.md-nav__link--active {
+  font-weight: 600;
+  color: var(--doc-text) !important;
+  border-left: 3px solid var(--doc-header-rule);
+  padding-left: 0.7rem;
+  margin-left: -0.85rem;
+}
+
+.md-sidebar--primary .md-sidebar__scrollwrap,
+.md-sidebar--secondary .md-sidebar__scrollwrap {
+  background-color: var(--doc-bg);
+}
+
+/* Type scale (Carbon productive). */
+.md-typeset {
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--doc-text);
+}
+
+.md-typeset a {
+  color: var(--doc-text);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.md-typeset a:hover {
+  color: var(--doc-text-secondary);
+}
+
+.md-typeset h1 {
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.25;
+  letter-spacing: 0;
+  color: var(--doc-text);
+  margin: 0 0 1rem;
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  letter-spacing: 0;
+  color: var(--doc-text);
+  border-bottom: 1px solid var(--doc-border);
+  padding-bottom: 0.35rem;
+  margin-top: 2rem;
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+  font-size: 1rem;
+  line-height: 1.375;
+  color: var(--doc-text);
+}
+
+.md-typeset p,
+.md-typeset li {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--doc-text);
+}
+
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd {
+  font-family: "IBM Plex Mono", "Menlo", "Consolas", monospace;
+  border-radius: 0;
+}
+
+.md-typeset code {
+  background-color: var(--doc-code-bg);
+  font-size: 0.875em;
+  padding: 0.05em 0.35em;
+  box-shadow: none;
+}
+
+.md-typeset pre {
+  border: 1px solid var(--doc-border);
+  background-color: var(--doc-layer);
+}
+
+.md-typeset .highlight,
+.md-typeset .highlight pre {
+  border-radius: 0;
+}
+
+/* Tables: hairline, square, header gray-10. */
+.md-typeset table:not([class]) {
+  border: 1px solid var(--doc-border);
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 0.875rem;
+}
+
+.md-typeset table:not([class]) th {
+  background-color: var(--doc-bg);
+  color: var(--doc-text);
+  font-weight: 600;
+  border: 1px solid var(--doc-border);
+  vertical-align: bottom;
+}
+
+.md-typeset table:not([class]) td {
+  border: 1px solid var(--doc-border);
+  vertical-align: top;
+}
+
+.md-typeset table:not([class]) tr:hover {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+/* Admonitions: square, 3px left rule. */
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 0;
+  box-shadow: none;
+  border: 1px solid var(--doc-border);
+  border-left: 3px solid var(--doc-text-secondary);
+  background-color: var(--doc-layer);
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+  background-color: transparent;
+  font-weight: 600;
+  border-radius: 0;
+}
+
+.md-typeset .admonition.warning,
+.md-typeset details.warning {
+  border-left-color: var(--doc-warn);
+}
+
+.md-typeset .admonition.danger,
+.md-typeset details.danger {
+  border-left-color: var(--doc-danger);
+}
+
+.md-typeset .admonition.tip,
+.md-typeset .admonition.note,
+.md-typeset details.tip,
+.md-typeset details.note {
+  border-left-color: var(--doc-text-secondary);
+}
+
+/* Tabs (Linux / Git Bash): square. */
+.md-typeset .tabbed-set {
+  border-radius: 0;
+}
+
+.md-typeset .tabbed-labels > label {
+  border-radius: 0;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.md-typeset .tabbed-labels > label:hover {
+  background-color: var(--doc-hover);
+}
+
+/* Buttons, chips, copy: square. */
+.md-typeset .md-button,
+.md-clipboard,
+.md-annotation__index {
+  border-radius: 0;
+}
+
+.md-footer {
+  background-color: var(--doc-border);
+  color: var(--doc-text);
+}
+
+.md-footer-meta {
+  background-color: var(--doc-bg);
+}
+
+.md-copyright,
+.md-social {
+  color: var(--doc-text-secondary);
+}
+
+.md-top {
+  border-radius: 0;
+  background-color: var(--doc-text);
+  color: var(--doc-layer);
+}

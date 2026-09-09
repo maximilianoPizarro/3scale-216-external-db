@@ -1,8 +1,10 @@
 # Install 3scale 2.15 (lab)
 
-Install the **2.15 operator** and an APIManager with **embedded** PostgreSQL and Redis before externalization. The database overlay does **not** install the operator.
+Install the **2.15 3scale operator** and an APIManager with **embedded** PostgreSQL and Redis before you externalize. The database overlay does **not** install the 3scale operator.
 
-## 1. Operator (OLM)
+Complete [Prerequisites](prerequisites.md) first.
+
+## 1. Install the 3scale operator (OLM)
 
 ```bash
 oc apply -k kustomize/overlays/lab-operator
@@ -11,13 +13,13 @@ oc -n 3scale get csv,subscription,pods
 
 Wait for CSV `Succeeded` and pod `threescale-operator-controller-manager-v2`.
 
-Catalog: `redhat-operators` / `openshift-marketplace`. For disconnected clusters, change `spec.source` on the Subscription.
+Catalog: `redhat-operators` / `openshift-marketplace`. On disconnected clusters, change `spec.source` on the Subscription.
 
-## 2. RWX volume for `system-storage`
+## 2. Provide RWX volume for `system-storage`
 
-3scale requires **ReadWriteMany** for PVC `system-storage`. On AWS, `gp3-csi` is RWO and the PVC stays Pending (`Volume capabilities not supported`).
+3scale requires **ReadWriteMany** for PVC `system-storage`. On AWS, `gp3-csi` is RWO. The PVC stays Pending (`Volume capabilities not supported`).
 
-For AWS lab clusters: create an EFS filesystem in the cluster VPC (mount targets + TCP 2049 from node security groups) and apply the EFS CSI overlay:
+On AWS lab clusters: create an EFS filesystem in the cluster VPC (mount targets + TCP 2049 from node security groups). Then apply the EFS CSI overlay:
 
 ```bash
 # Set fileSystemId in kustomize/overlays/lab-efs/kustomization.yaml
@@ -28,9 +30,9 @@ oc get sc efs-sc
 
 Details: `kustomize/overlays/lab-efs/README.md`. On other clouds, replace `efs-sc` with an equivalent RWX StorageClass.
 
-## 3. APIManager 2.15 (embedded PostgreSQL)
+## 3. Deploy APIManager 2.15 (embedded PostgreSQL)
 
-In `kustomize/overlays/lab-apimanager/kustomization.yaml`, set the apps domain (`REPLACE_WILDCARD_DOMAIN`, e.g. `apps.cluster.example.com`). The overlay already points `fileStorage` to `efs-sc`.
+Set the apps domain in `kustomize/overlays/lab-apimanager/kustomization.yaml` (`REPLACE_WILDCARD_DOMAIN`, for example `apps.cluster.example.com`). The overlay already points `fileStorage` to `efs-sc`.
 
 ```bash
 oc apply -k kustomize/overlays/lab-apimanager
@@ -47,13 +49,13 @@ oc -n 3scale delete pvc system-storage
 
 When the APIManager is healthy, continue with [Externalize PostgreSQL](externalize-postgresql.md) and [Externalize Redis](externalize-redis.md).
 
-## 4. Operator channel 2.16 (only after externalization)
+## 4. Switch the operator channel to 2.16 (only after externalization)
 
 ```bash
 oc apply -k kustomize/overlays/operator-216
 ```
 
-GitOps phase 1 (operator + APIManager, not databases):
+GitOps phase 1 (3scale operator + APIManager, not databases):
 
 ```bash
 oc apply -k gitops/

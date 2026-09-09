@@ -1,6 +1,6 @@
 # Operación: logs, persistencia e imágenes
 
-Tras `externalComponents`, el operador 3scale no gestiona estas BDD.
+Tras `externalComponents`, el operador 3scale no gestiona estas BDD. Checklist de día 2 (Redis persistente, backups, digest): [06-day-2.md](06-day-2.md).
 
 ## Logs
 

@@ -69,3 +69,4 @@ El hardware del laboratorio no tiene que coincidir con producción. Ver [docs/la
 3. [docs/runbooks/02-externalize-redis.md](runbooks/02-externalize-redis.md) (Windows/Git Bash: [02-bis-externalize-redis-windows.md](runbooks/02-bis-externalize-redis-windows.md))
 4. [docs/runbooks/03-upgrade-215-to-216.md](runbooks/03-upgrade-215-to-216.md)
 5. [docs/runbooks/04-ops-logs-persistencia-imagenes.md](runbooks/04-ops-logs-persistencia-imagenes.md)
+6. [docs/runbooks/06-day-2.md](runbooks/06-day-2.md)

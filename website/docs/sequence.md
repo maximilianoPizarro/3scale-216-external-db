@@ -1,19 +1,22 @@
 # Migration sequence
 
-Linux/bash steps. Aligns with `docs/runbooks/00-secuencia-y-matriz.md` in the repository.
+Linux/bash is the default. On Git Bash, set `MSYS_NO_PATHCONV=1` and follow [Windows / Git Bash](windows.md). This page aligns with `docs/runbooks/00-secuencia-y-matriz.md` in the repository.
+
+Complete [Prerequisites](prerequisites.md) before step 1.
 
 ## Order of operations
 
-1. **Install 3scale 2.15** on a test cluster — operator + APIManager with embedded databases ([Install 3scale 2.15 (lab)](install-lab.md)).
+1. **Install 3scale 2.15** on a test cluster — 3scale operator + APIManager with embedded databases ([Install 3scale 2.15 (lab)](install-lab.md)).
 2. **Confirm the matrix**: OpenShift version supported by both 2.15 and 2.16; latest CSV on channel `threescale-2.15`.
 3. **Snapshot / backup** PVCs and secrets (`system-database`, `system-redis`, `backend-redis`).
-4. **Maintenance window**: scale the 3scale operator and components to 0 **except** the database being dumped.
+4. **Open a maintenance window**: scale the 3scale operator and components to 0 **except** the database you are dumping.
 5. **Externalize PostgreSQL** 10 → 15 in-cluster ([Externalize PostgreSQL](externalize-postgresql.md)).
 6. **Externalize Redis** 6 → 7 in-cluster ([Externalize Redis](externalize-redis.md)).
-7. Set `spec.externalComponents` on the APIManager (done in the PostgreSQL and Redis runbooks).
-8. **Restore replicas**, validate Admin Portal, Developer Portal, and APIcast.
-9. **Upgrade operator** to channel `threescale-2.16` ([Upgrade operator to 2.16](upgrade-216.md)).
+7. Set `spec.externalComponents` on the APIManager (the PostgreSQL and Redis runbooks do this).
+8. **Restore replicas**. Validate Admin Portal, Developer Portal, and APIcast.
+9. **Upgrade the 3scale operator** to channel `threescale-2.16` ([Upgrade operator to 2.16](upgrade-216.md)).
 10. **Upgrade OpenShift** afterwards, if needed, per [Supported Configurations](https://access.redhat.com/articles/2798521).
+11. **Operate day 2** in `3scale-db`: persist Redis, backups, pinned digests ([Day 2 operations](day-2.md)).
 
 !!! warning "Do not combine upgrades"
     Do not run the 3scale upgrade and the OpenShift upgrade in the same maintenance window.
@@ -25,18 +28,18 @@ Linux/bash steps. Aligns with `docs/runbooks/00-secuencia-y-matriz.md` in the re
 | `lab` / `lab-persist` | `gp3-csi` (example) | Test clusters |
 | `prod` / `prod-persist` | Cluster default | Production-like |
 
-The 3scale procedure is the same; only storage defaults differ.
+The 3scale procedure is the same. Only storage defaults differ.
 
 ## Deployment options
 
 === "GitOps (recommended)"
 
     ```bash
-    # Phase 1: operator 2.15 + APIManager
+    # Phase 1: 3scale operator 2.15 + APIManager
     oc apply -k gitops/
     oc apply -k gitops/rhacm/              # managed cluster via ACM hub
 
-    # Phase 2: external DBs (create system-database secret in 3scale-db first)
+    # Phase 2: in-cluster databases (create system-database secret in 3scale-db first)
     oc apply -k gitops/external-db
     oc apply -k gitops/rhacm/external-db
     ```

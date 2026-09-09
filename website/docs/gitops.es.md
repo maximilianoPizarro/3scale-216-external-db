@@ -1,6 +1,6 @@
 # GitOps y RHACM
 
-Dos fases. **No** aplicar operador y BDD externas a la vez en un cluster vacío: el APIManager 2.15 debe crear PostgreSQL/Redis embebidos primero; los recursos de `3scale-db` entran en la ventana de externalización.
+Usar dos fases. **No** aplicar el operador 3scale y las bases in-cluster a la vez en un cluster vacío. El APIManager 2.15 debe crear PostgreSQL y Redis embebidos primero. Los recursos de `3scale-db` entran en la ventana de externalización.
 
 Sustituir placeholders antes del sync:
 
@@ -10,7 +10,7 @@ Sustituir placeholders antes del sync:
 
 Antes del APIManager hace falta una StorageClass **RWX**. En AWS de laboratorio: crear el filesystem EFS, poner `fileSystemId` en `kustomize/overlays/lab-efs` y aplicar ese overlay (cluster-scoped; no va en el ApplicationSet).
 
-## Fase 1 — operador 2.15 + APIManager
+## Fase 1 — operador 3scale 2.15 + APIManager
 
 ```bash
 oc apply -k gitops/
@@ -41,14 +41,14 @@ oc apply -k gitops/external-db
 
 Destino: `3scale-db`. `prune: false` para no borrar PVC.
 
-Tras el restore de Redis, cambiar `redis-config.path` a `kustomize/bases/redis-config-persist` en el ApplicationSet de BDD.
+Tras el restore de Redis, cambiar `redis-config.path` a `kustomize/bases/redis-config-persist` en el ApplicationSet de BDD. Dejarlo así el día 2. `selfHeal: true` revierte un edit manual del ConfigMap. Ver [Operación día 2](day-2.es.md).
 
 ## RHACM (hub)
 
 Misma separación:
 
 ```bash
-oc apply -k gitops/rhacm/              # Placement + operador PUSH
+oc apply -k gitops/rhacm/              # Placement + operador 3scale PUSH
 oc apply -k gitops/rhacm/external-db   # overlay prod → 3scale-db en managed cluster
 ```
 

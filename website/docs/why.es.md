@@ -1,18 +1,24 @@
 # Motivación de este repositorio
 
-A partir de **3scale 2.16**, el operador **deja de reconciliar** estas bases embebidas:
+A partir de **3scale 2.16**, el operador 3scale **deja de reconciliar** estas bases embebidas:
 
 | Componente | Qué cambia en 2.16 |
 |------------|-------------------|
-| **PostgreSQL** (base system) | Ya no la gestiona el operador |
-| **Redis** (system y backend) | Ya no las gestiona el operador |
+| **PostgreSQL** (base system) | El operador 3scale ya no la gestiona |
+| **Redis** (system y backend) | El operador 3scale ya no las gestiona |
 | **Zync database** | Puede seguir interna (gestionada por el operador) |
 
-Hay que **externalizar** esas bases **antes** de actualizar el operador a 2.16. Si las versiones no cumplen el preflight de 2.16 (PostgreSQL ≥ 15.0, Redis ≥ 7.2), el operador se instala pero **no completa** el upgrade de la instancia.
+Hay que **externalizar** esas bases **antes** de actualizar el operador 3scale a 2.16.
+
+!!! warning "Requisito de preflight"
+    PostgreSQL ≥ 15.0 y Redis ≥ 7.2 son obligatorios antes del upgrade.
+    Si las versiones no cumplen, el operador 3scale se instala pero el upgrade de la instancia no completa.
 
 ## External ≠ fuera del cluster
 
-En la documentación de Red Hat, *external* significa que la base queda **fuera del ciclo de vida de la instalación 3scale** — el operador no la crea, parchea ni reconcilia. La base **puede seguir en el mismo cluster OpenShift**, por ejemplo en un namespace dedicado como `3scale-db`.
+En la documentación de Red Hat, *external* significa que la base queda **fuera del ciclo de vida de la instalación 3scale**. El operador 3scale ya no la crea, parchea ni reconcilia.
+
+La base **puede seguir in-cluster**, por ejemplo en un namespace dedicado como `3scale-db`.
 
 Este repositorio **no** es una guía de migración a RDS u off-cluster. Ofrece:
 
@@ -22,12 +28,14 @@ Este repositorio **no** es una guía de migración a RDS u off-cluster. Ofrece:
 
 ## Qué no cubre este repo
 
-- Bases gestionadas en nube (RDS, Azure Database, etc.)
-- Redis Cluster (no soportado por Red Hat para 3scale)
-- Procedimientos específicos de Windows en este sitio — usar los runbooks `01-bis` y `02-bis` del repositorio, enlazados desde el [README](https://github.com/maximilianoPizarro/3scale-migration-216#windows--git-bash)
+- Bases gestionadas en nube (RDS, Azure Database y similares)
+- Redis Cluster (Red Hat no lo soporta para 3scale)
+- Topología o red de bases off-cluster
 
 ## Siguientes pasos
 
+- [Requisitos previos](prerequisites.es.md)
 - [Documentación oficial de Red Hat](official-docs.es.md)
 - [Versiones probadas](tested-versions.es.md)
 - [Secuencia de migración](sequence.es.md)
+- [Operación día 2](day-2.es.md)

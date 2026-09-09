@@ -12,6 +12,7 @@
 8. Restaurar réplicas, validar Admin Portal, Developer Portal y APIcast.
 9. Upgrade del operador al canal `threescale-2.16` ([03-upgrade-215-to-216.md](03-upgrade-215-to-216.md)).
 10. Upgrade de OpenShift **después**, si aplica, según [Supported Configurations](https://access.redhat.com/articles/2798521).
+11. Día 2 en `3scale-db`: Redis persistente, backups, digest ([06-day-2.md](06-day-2.md)).
 
 No combinar el salto de 3scale y el de OCP en la misma ventana.
 

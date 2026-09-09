@@ -7,11 +7,11 @@
 [![Redis](https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white)](https://catalog.redhat.com/software/containers/rhel9/redis-7)
 [![Storage](https://img.shields.io/badge/Storage-gp3--csi%20%2B%20EFS%20CSI-lightgrey)](website/docs/tested-versions.md)
 
-Reusable manifests and runbooks to **externalize** PostgreSQL (system) and Redis (system + backend) **inside OpenShift** before upgrading the 3scale operator to **2.16**.
+Reusable manifests and runbooks to **externalize** PostgreSQL (system) and Redis (system + backend) **in-cluster** before upgrading the 3scale operator to **2.16**.
 
-Starting with 2.16, the operator **stops reconciling** those embedded databases. *External* means **outside the operator lifecycle** — databases **can remain in-cluster** (this repo uses namespace `3scale-db`). Zync database can stay internal. This package covers dump/restore + Kustomize/GitOps, not RDS or off-cluster migration.
+Starting with 2.16, the 3scale operator **stops reconciling** those embedded databases. *External* means **outside the operator lifecycle** — databases **can remain in-cluster** (this repo uses namespace `3scale-db`). Zync database can stay internal. This package covers dump/restore + Kustomize/GitOps, not RDS or off-cluster migration.
 
-**Documentation site (English / Español):** [https://maximilianoPizarro.github.io/3scale-migration-216/](https://maximilianoPizarro.github.io/3scale-migration-216/)
+**Documentation site (English / Español):** [https://maximilianopizarro.github.io/3scale-216-external-db/](https://maximilianopizarro.github.io/3scale-216-external-db/)
 
 **Official guide:** [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index)
 
@@ -47,13 +47,13 @@ oc apply -k kustomize/overlays/lab
 oc apply -k kustomize/overlays/operator-216
 ```
 
-Full sequence: [website — Migration sequence](https://maximilianoPizarro.github.io/3scale-migration-216/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
+Full sequence: [website — Migration sequence](https://maximilianopizarro.github.io/3scale-216-external-db/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
 
 GitOps: `oc apply -k gitops/` (phase 1) then `oc apply -k gitops/external-db` (phase 2). See [gitops/README.md](gitops/README.md).
 
 ## Windows / Git Bash
 
-GitHub Pages documents **Linux** steps only. On Windows, use these runbook variants (MSYS path conversion workarounds):
+Use Git Bash, not PowerShell. Site page: [Windows / Git Bash](https://maximilianopizarro.github.io/3scale-216-external-db/windows/). PostgreSQL and Redis runbooks on the site include a **Windows / Git Bash** tab. Clone-friendly copies:
 
 - [docs/runbooks/01-bis-externalize-postgresql-windows.md](docs/runbooks/01-bis-externalize-postgresql-windows.md)
 - [docs/runbooks/02-bis-externalize-redis-windows.md](docs/runbooks/02-bis-externalize-redis-windows.md)
@@ -76,11 +76,11 @@ These paths are listed in [.gitignore](.gitignore).
 [![Plataforma](https://img.shields.io/badge/AWS-self--managed-orange?logo=amazonwebservices)](https://aws.amazon.com/)
 [![3scale](https://img.shields.io/badge/3scale-2.15.5%20→%202.16.4-red)](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index)
 
-Paquete reutilizable para **externalizar** PostgreSQL (system) y Redis (system + backend) **dentro de OpenShift** antes de actualizar el operador 3scale a **2.16**.
+Paquete reutilizable para **externalizar** PostgreSQL (system) y Redis (system + backend) **in-cluster** antes de actualizar el operador 3scale a **2.16**.
 
-A partir de 2.16, el operador **deja de reconciliar** esas bases embebidas. *External* significa **fuera del ciclo de vida del operador** — las bases **pueden seguir in-cluster** (este repo usa el namespace `3scale-db`). Zync puede quedar interna. Este paquete cubre dump/restore + Kustomize/GitOps, no RDS ni migración off-cluster.
+A partir de 2.16, el operador 3scale **deja de reconciliar** esas bases embebidas. *External* significa **fuera del ciclo de vida del operador** — las bases **pueden seguir in-cluster** (este repo usa el namespace `3scale-db`). Zync puede quedar interna. Este paquete cubre dump/restore + Kustomize/GitOps, no RDS ni migración off-cluster.
 
-**Sitio de documentación (inglés / español):** [https://maximilianoPizarro.github.io/3scale-migration-216/es/](https://maximilianoPizarro.github.io/3scale-migration-216/es/)
+**Sitio de documentación (inglés / español):** [https://maximilianopizarro.github.io/3scale-216-external-db/es/](https://maximilianopizarro.github.io/3scale-216-external-db/es/)
 
 **Guía oficial:** [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index)
 
@@ -109,13 +109,13 @@ oc apply -k kustomize/overlays/lab
 oc apply -k kustomize/overlays/operator-216
 ```
 
-Secuencia completa: [sitio — Secuencia de migración](https://maximilianoPizarro.github.io/3scale-migration-216/es/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
+Secuencia completa: [sitio — Secuencia de migración](https://maximilianopizarro.github.io/3scale-216-external-db/es/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
 
 GitOps: `oc apply -k gitops/` (fase 1) y luego `oc apply -k gitops/external-db` (fase 2). Ver [gitops/README.md](gitops/README.md).
 
 ## Windows / Git Bash
 
-El sitio de Pages documenta solo pasos **Linux**. En Windows, usar estas variantes (workarounds de conversión de rutas MSYS):
+Usar Git Bash, no PowerShell. Página del sitio: [Windows / Git Bash](https://maximilianopizarro.github.io/3scale-216-external-db/es/windows/). Los runbooks de PostgreSQL y Redis en el sitio incluyen una pestaña **Windows / Git Bash**. Copias para clonar el repo:
 
 - [docs/runbooks/01-bis-externalize-postgresql-windows.md](docs/runbooks/01-bis-externalize-postgresql-windows.md)
 - [docs/runbooks/02-bis-externalize-redis-windows.md](docs/runbooks/02-bis-externalize-redis-windows.md)

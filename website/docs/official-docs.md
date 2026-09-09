@@ -1,6 +1,6 @@
 # Official documentation
 
-Use Red Hat as the source of truth. This repository complements — it does not replace — the official migration guide.
+Red Hat guides for this migration:
 
 ## Primary guides
 
@@ -19,5 +19,6 @@ Use Red Hat as the source of truth. This repository complements — it does not 
 | Redis 6 upgrade — on-cluster | [Externalize Redis](externalize-redis.md) + `kustomize/bases/redis-*` |
 | Operator upgrade | [Upgrade operator to 2.16](upgrade-216.md) + `kustomize/overlays/operator-216` |
 | Lab install before externalization | [Install 3scale 2.15 (lab)](install-lab.md) |
+| Day 2 (self-managed databases) | [Day 2 operations](day-2.md) + `docs/runbooks/06-day-2.md` |
 
-Detailed operational steps (Spanish, clone-friendly) remain in the repository under `docs/runbooks/`.
+Clone-friendly operational steps (Spanish) remain in the repository under `docs/runbooks/`.

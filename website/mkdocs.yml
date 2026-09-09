@@ -1,0 +1,83 @@
+site_name: 3scale 2.15 → 2.16 migration
+site_description: In-cluster PostgreSQL and Redis externalization before upgrading to 3scale 2.16
+site_url: https://maximilianoPizarro.github.io/3scale-migration-216/
+repo_url: https://github.com/maximilianoPizarro/3scale-migration-216
+repo_name: 3scale-migration-216
+edit_uri: edit/main/website/docs/
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: red
+      accent: red
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: red
+      accent: red
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.suggest
+    - content.code.copy
+
+plugins:
+  - search
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
+        - locale: es
+          name: Español
+          build: true
+          nav_translations:
+            Home: Inicio
+            Why this repo: Motivación
+            Official documentation: Documentación oficial
+            Tested versions: Versiones probadas
+            Migration sequence: Secuencia de migración
+            Install 3scale 2.15 (lab): Instalar 3scale 2.15 (lab)
+            Externalize PostgreSQL: Externalizar PostgreSQL
+            Externalize Redis: Externalizar Redis
+            Upgrade operator to 2.16: Actualizar operador a 2.16
+            GitOps and RHACM: GitOps y RHACM
+            Operations FAQ: FAQ de operación
+
+nav:
+  - Home: index.md
+  - Why this repo: why.md
+  - Official documentation: official-docs.md
+  - Tested versions: tested-versions.md
+  - Migration sequence: sequence.md
+  - Install 3scale 2.15 (lab): install-lab.md
+  - Externalize PostgreSQL: externalize-postgresql.md
+  - Externalize Redis: externalize-redis.md
+  - Upgrade operator to 2.16: upgrade-216.md
+  - GitOps and RHACM: gitops.md
+  - Operations FAQ: faq.md
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/maximilianoPizarro/3scale-migration-216

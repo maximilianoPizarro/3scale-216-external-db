@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: 3scale
+resources:
+  - ../../bases/apimanager
+patches:
+  - target:
+      kind: APIManager
+      name: apimanager
+    patch: |-
+      - op: replace
+        path: /spec/wildcardDomain
+        value: REPLACE_WILDCARD_DOMAIN
+      - op: add
+        path: /spec/system/fileStorage
+        value:
+          persistentVolumeClaim:
+            storageClassName: efs-sc

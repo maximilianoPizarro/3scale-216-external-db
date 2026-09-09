@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system-redis-external
+  labels:
+    app: system-redis-external
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      deployment: system-redis-external
+  template:
+    metadata:
+      labels:
+        deployment: system-redis-external
+        app: system-redis-external
+    spec:
+      restartPolicy: Always
+      serviceAccountName: system-redis-external
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: system-redis-external
+          image: registry.redhat.io/rhel9/redis-7
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - container-entrypoint
+                - bash
+                - "-c"
+                - redis-cli set liveness-probe "`date`" | grep OK
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            periodSeconds: 30
+            successThreshold: 1
+            failureThreshold: 3
+          terminationMessagePath: /dev/termination-log
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 10
+            timeoutSeconds: 1
+            periodSeconds: 10
+            successThreshold: 1
+            failureThreshold: 3
+          env:
+            - name: REDIS_CONF
+              value: /etc/redis.d/redis.conf
+          volumeMounts:
+            - name: system-redis-storage-external
+              mountPath: /var/lib/redis/data
+            - name: redis-config-external
+              mountPath: /etc/redis.d/
+          terminationMessagePolicy: File
+      volumes:
+        - name: system-redis-storage-external
+          persistentVolumeClaim:
+            claimName: system-redis-storage-external
+        - name: redis-config-external
+          configMap:
+            name: redis-config-external
+            items:
+              - key: redis.conf
+                path: redis.conf
+            defaultMode: 420
+      dnsPolicy: ClusterFirst
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600

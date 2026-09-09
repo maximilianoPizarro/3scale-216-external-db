@@ -1,0 +1,50 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: threescale-operator-acm
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/name: 3scale-operator
+    app.kubernetes.io/part-of: 3scale
+    platform.io/gitops-strategy: acm-push
+    cluster.open-cluster-management.io/placement: threescale-external-db-placement
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  generators:
+    - clusterDecisionResource:
+        configMapRef: threescale-external-db-acm-placement
+        labelSelector:
+          matchLabels:
+            cluster.open-cluster-management.io/placement: threescale-external-db-placement
+        requeueAfterSeconds: 180
+  template:
+    metadata:
+      name: "{{name}}-threescale-operator"
+      labels:
+        app.kubernetes.io/part-of: 3scale
+        platform.io/gitops-strategy: acm-push
+        cluster.open-cluster-management.io/placement: threescale-external-db-placement
+        apps.open-cluster-management.io/ocm-managed-cluster: "{{name}}"
+      annotations:
+        apps.open-cluster-management.io/ocm-managed-cluster: "{{name}}"
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      source:
+        repoURL: REPLACE_REPO_URL
+        targetRevision: main
+        path: kustomize/overlays/lab-operator
+      destination:
+        name: "{{name}}"
+        namespace: 3scale
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - ServerSideApply=true
+          - SkipDryRunOnMissingResource=true
+        automated:
+          prune: false
+          selfHeal: true

@@ -1,0 +1,54 @@
+# Hub Argo CD PUSH: one Application per ManagedCluster selected by ACM Placement.
+# Same generator as Hybrid Mesh Platform fleet-spoke-push (clusterDecisionResource).
+# https://maximilianopizarro.github.io/hybrid-mesh-platform/validatedpatterns-docs/deploy-acm-gitops.html
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: threescale-external-db-acm
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/name: threescale-external-db
+    app.kubernetes.io/part-of: 3scale
+    platform.io/gitops-strategy: acm-push
+    cluster.open-cluster-management.io/placement: threescale-external-db-placement
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  generators:
+    - clusterDecisionResource:
+        configMapRef: threescale-external-db-acm-placement
+        labelSelector:
+          matchLabels:
+            cluster.open-cluster-management.io/placement: threescale-external-db-placement
+        requeueAfterSeconds: 180
+  template:
+    metadata:
+      name: "{{name}}-threescale-external-db"
+      labels:
+        app.kubernetes.io/part-of: 3scale-external-db
+        platform.io/gitops-strategy: acm-push
+        cluster.open-cluster-management.io/placement: threescale-external-db-placement
+        apps.open-cluster-management.io/cluster-set: global
+        apps.open-cluster-management.io/ocm-managed-cluster: "{{name}}"
+      annotations:
+        apps.open-cluster-management.io/ocm-managed-cluster: "{{name}}"
+        apps.open-cluster-management.io/ocm-managed-cluster-app-namespace: openshift-gitops
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      source:
+        repoURL: REPLACE_REPO_URL
+        targetRevision: main
+        path: kustomize/overlays/prod
+      destination:
+        name: "{{name}}"
+        namespace: 3scale-db
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - ServerSideApply=true
+        automated:
+          prune: false
+          selfHeal: true

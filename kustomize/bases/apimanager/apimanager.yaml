@@ -1,0 +1,13 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIManager
+metadata:
+  name: apimanager
+  labels:
+    app.kubernetes.io/name: apimanager
+    app.kubernetes.io/part-of: 3scale
+spec:
+  wildcardDomain: apps.example.com
+  resourceRequirementsEnabled: true
+  system:
+    database:
+      postgresql: {}

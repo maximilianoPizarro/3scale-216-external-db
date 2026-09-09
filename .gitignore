@@ -1,0 +1,8 @@
+*.backup
+*.rdb
+*-secret.yaml
+*.pem
+.env
+/tmp/
+site/
+.venv/

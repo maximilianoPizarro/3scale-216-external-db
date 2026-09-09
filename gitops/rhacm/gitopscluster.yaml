@@ -1,0 +1,20 @@
+apiVersion: apps.open-cluster-management.io/v1beta1
+kind: GitOpsCluster
+metadata:
+  name: threescale-external-db-gitops
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/name: threescale-external-db
+    app.kubernetes.io/part-of: 3scale
+    platform.io/gitops-strategy: acm-push
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  argoServer:
+    cluster: local-cluster
+    argoNamespace: openshift-gitops
+  placementRef:
+    kind: Placement
+    apiVersion: cluster.open-cluster-management.io/v1beta1
+    name: threescale-external-db-placement

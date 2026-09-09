@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: 3scale-db
+  labels:
+    app.kubernetes.io/name: threescale-external-db
+    app.kubernetes.io/part-of: 3scale

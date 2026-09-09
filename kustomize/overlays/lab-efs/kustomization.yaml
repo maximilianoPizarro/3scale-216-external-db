@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - operatorgroup.yaml
+  - subscription.yaml
+  - clustercsidriver.yaml
+  - storageclass.yaml
+patches:
+  - target:
+      kind: StorageClass
+      name: efs-sc
+    patch: |-
+      - op: replace
+        path: /parameters/fileSystemId
+        value: REPLACE_EFS_FILESYSTEM_ID

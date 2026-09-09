@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: threescale-operator
+  namespace: openshift-gitops
+  labels:
+    app.kubernetes.io/name: 3scale-operator
+    app.kubernetes.io/part-of: 3scale
+spec:
+  goTemplate: true
+  goTemplateOptions:
+    - missingkey=error
+  generators:
+    - list:
+        elements:
+          - name: operator
+            path: kustomize/overlays/lab-operator
+            wave: "0"
+          - name: apimanager
+            path: kustomize/overlays/lab-apimanager
+            wave: "5"
+  template:
+    metadata:
+      name: "threescale-{{.name}}"
+      annotations:
+        argocd.argoproj.io/sync-wave: "{{.wave}}"
+      labels:
+        app.kubernetes.io/part-of: 3scale
+    spec:
+      project: default
+      source:
+        repoURL: REPLACE_REPO_URL
+        targetRevision: main
+        path: "{{.path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: 3scale
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+          - ApplyOutOfSyncOnly=true
+          - SkipDryRunOnMissingResource=true
+        automated:
+          prune: false
+          selfHeal: true
+        retry:
+          limit: 20
+          backoff:
+            duration: 30s
+            factor: 2
+            maxDuration: 10m

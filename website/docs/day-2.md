@@ -66,9 +66,7 @@ oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/sys
 | Redis backend | `redis-cli SAVE`, then `dump.rdb` / AOF + snapshot | `backend-redis-storage-external` |
 | Redis system | same | `system-redis-storage-external` |
 
-Keep a copy of the connection secrets. After a restore as user `postgres`, re-apply the PostgreSQL 15 grant (below).
-
-On Git Bash, export `MSYS_NO_PATHCONV=1` and follow [Windows / Git Bash](windows.md) before any `oc exec` path that starts with `/`.
+Keep a copy of the connection secrets. After a restore as user `postgres`, re-apply the PostgreSQL 15 grant ([Grant CREATE on schema `public`](externalize-postgresql.md#grant-create-on-schema-public)).
 
 !!! warning "No high availability"
     Each database is **one replica**, `Recreate`, ReadWriteOnce. Red Hat does not support Redis Cluster for 3scale. Treat node drains and image rollouts as a maintenance window.
@@ -113,12 +111,14 @@ Watch PVC fill rate and Redis memory. Redis is in-memory.
 
 ## PostgreSQL 15 grant
 
-Keep `USAGE, CREATE` on schema `public` for user `system`. If you restore a dump as `postgres` and skip this, `system-app-pre` fails with `permission denied for schema public`:
+!!! warning "Canonical grant command"
+    Keep `USAGE, CREATE` on schema `public` for user `system`. If you restore a dump as `postgres` and skip this, `system-app-pre` fails with `permission denied for schema public`. Full command: [Grant CREATE on schema `public`](externalize-postgresql.md#grant-create-on-schema-public).
 
-```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- \
-  psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
-```
+## Ownership diagram
+
+![Ownership and rollback paths](images/ownership-and-rollback.png)
+
+Rollback before you delete embedded resources: [Rollback](rollback.md).
 
 ## GitOps pitfalls
 
@@ -136,6 +136,7 @@ Do not combine an OpenShift upgrade with a 3scale operator upgrade. A 2.16 micro
 
 ## Next steps
 
+- [Rollback](rollback.md)
 - [Official documentation](official-docs.md)
 - [Operations FAQ](faq.md)
 - [GitOps and RHACM](gitops.md)

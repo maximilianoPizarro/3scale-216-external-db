@@ -4,6 +4,9 @@ Los valores siguientes reflejan una **migración de laboratorio** en AWS. Sustit
 
 Matriz de producto: [Supported Configurations](https://access.redhat.com/articles/2798521).
 
+!!! note "Reconfirmar la matriz antes de producción"
+    Red Hat actualiza [Supported Configurations](https://access.redhat.com/articles/2798521) con los micro releases de producto. Confirmar versiones de OpenShift, PostgreSQL y Redis para **2.15 y 2.16** en el cluster destino antes de agendar la ventana de mantenimiento. Los valores de laboratorio de abajo son una instantánea, no sustituyen el artículo vigente.
+
 ## Entorno
 
 | Capa | Valor probado |

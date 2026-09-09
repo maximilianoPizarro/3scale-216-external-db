@@ -20,8 +20,7 @@ Este laboratorio se probó en OpenShift 4.19. Ver [Versiones probadas](tested-ve
 
 - `oc` autenticado contra el cluster destino
 - Pull a `registry.redhat.io` para las imágenes RHSCL
-- Bash en Linux **o** Git Bash en Windows — no PowerShell para dump/restore
-- En Windows, leer [Windows / Git Bash](windows.es.md) antes de copiar rutas que empiezan por `/`
+- Bash en Linux para dump/restore (Git Bash en Windows: runbooks `01-bis` / `02-bis` en `docs/runbooks/`)
 
 ## Almacenamiento
 

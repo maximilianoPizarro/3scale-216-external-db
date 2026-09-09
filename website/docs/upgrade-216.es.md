@@ -31,14 +31,10 @@ APIcast operator-based, si aplica, tiene su propio canal 2.16 (capítulo 2 de la
 
 ## Si `system-app-pre` falla: `permission denied for schema public`
 
-PostgreSQL 15 revoca `CREATE` en `public` salvo al dueño del schema. Tras un restore hecho como `postgres`, el usuario `system` no puede migrar:
+PostgreSQL 15 revoca `CREATE` en `public` salvo al dueño del schema. Tras un restore hecho como `postgres`, el usuario `system` no puede migrar.
 
-```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- \
-  psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
-```
-
-Borrar el Job `system-app-pre` y dejar que el operador 3scale lo recree. Aplicar este GRANT en [Externalizar PostgreSQL](externalize-postgresql.es.md). Repetirlo si se omitió.
+!!! warning "GRANT de PostgreSQL 15 obligatorio"
+    Ejecutar el comando completo `GRANT USAGE, CREATE ON SCHEMA public` durante la externalización — [GRANT CREATE en schema `public`](externalize-postgresql.es.md#grant-create-en-schema-public). Borrar el Job `system-app-pre` y dejar que el operador 3scale lo recree.
 
 ## Si el preflight de versión falla
 

@@ -4,23 +4,11 @@ Common questions when you move from 3scale 2.15 (embedded databases) to 2.16 wit
 
 ## Does “external” mean off-cluster?
 
-No. In Red Hat documentation, *external* means the database is **not part of the 3scale installation**. The 3scale operator does not reconcile it. The database can live in the same cluster, even in the same namespace (not recommended). A dedicated namespace (`3scale-db` in this repo) is the usual pattern.
-
-`zync-database` can remain an internal operator-managed component.
+No. *External* means the database sits **outside the 3scale operator lifecycle** — it can stay in-cluster (for example namespace `3scale-db`). Full explanation, operator reconciliation table, and scope limits: [Why this repo](why.md).
 
 ## Who operates logs and disk persistence?
 
-After you set `externalComponents`, the 3scale operator **stops reconciling** the Deployment and PVC:
-
-| Area | Owner |
-|------|-------|
-| Pod lifecycle (Deployment, probes, image) | Whoever operates the databases (these manifests / GitOps) |
-| Persistence | PVC + StorageClass + VolumeSnapshot / backups |
-| Logs | Container stdout/stderr → cluster logging stack |
-| RHSCL image patches | Whoever operates the databases (the 3scale operator no longer triggers ImageChange) |
-| Connection from 3scale | Secrets in the 3scale namespace |
-
-Deleting the `APIManager` must not delete external PVCs. Resources in this package have no `ownerReferences` to the APIManager.
+After `externalComponents`, you own PostgreSQL and both Redis in `3scale-db` (pods, PVCs, images, backups, logs). The 3scale operator still manages `system-app`, APIcast, and Zync. Ownership matrix and steady-state checklist: [Day 2 operations](day-2.md). Motivation: [Why this repo](why.md).
 
 ## Which image versions to pin?
 
@@ -46,13 +34,10 @@ Yes. Use 4.19 to validate 2.16 with self-managed databases. On the cluster you w
 
 ## Where is the full procedure?
 
-Detailed runbooks (Spanish) in the repository:
+This site is the English procedure. Clone-friendly runbooks in the repository:
 
-1. `docs/runbooks/00-secuencia-y-matriz.md`
-2. `docs/runbooks/01-externalize-postgresql.md`
-3. `docs/runbooks/02-externalize-redis.md`
-4. `docs/runbooks/03-upgrade-215-to-216.md`
-5. `docs/runbooks/04-ops-logs-persistencia-imagenes.md`
-6. `docs/runbooks/06-day-2.md`
+**English:** `docs/runbooks/en/` (`00`–`07`, including Windows variants `01-bis` / `02-bis`).
 
-On Windows, use [Windows / Git Bash](windows.md) and the `01-bis` / `02-bis` runbooks. Operations reference: `docs/faq-externalizacion.md`.
+**Español:** `docs/runbooks/` (mismos números).
+
+On Windows (Git Bash), use `docs/runbooks/01-bis-externalize-postgresql-windows.md` and `docs/runbooks/02-bis-externalize-redis-windows.md`. Operations reference: `docs/faq-externalizacion.md`. If cutover fails: [Rollback](rollback.md).

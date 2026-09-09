@@ -1,10 +1,14 @@
 # Migration sequence
 
-Linux/bash is the default. On Git Bash, set `MSYS_NO_PATHCONV=1` and follow [Windows / Git Bash](windows.md). This page aligns with `docs/runbooks/00-secuencia-y-matriz.md` in the repository.
+Linux/bash is the default. This page aligns with `docs/runbooks/00-secuencia-y-matriz.md` in the repository.
 
 Complete [Prerequisites](prerequisites.md) before step 1.
 
 ## Order of operations
+
+![Migration sequence](images/migration-sequence.png)
+
+![Namespace 3scale-db states](images/namespace-3scale-db-states.png)
 
 1. **Install 3scale 2.15** on a test cluster — 3scale operator + APIManager with embedded databases ([Install 3scale 2.15 (lab)](install-lab.md)).
 2. **Confirm the matrix**: OpenShift version supported by both 2.15 and 2.16; latest CSV on channel `threescale-2.15`.
@@ -17,6 +21,8 @@ Complete [Prerequisites](prerequisites.md) before step 1.
 9. **Upgrade the 3scale operator** to channel `threescale-2.16` ([Upgrade operator to 2.16](upgrade-216.md)).
 10. **Upgrade OpenShift** afterwards, if needed, per [Supported Configurations](https://access.redhat.com/articles/2798521).
 11. **Operate day 2** in `3scale-db`: persist Redis, backups, pinned digests ([Day 2 operations](day-2.md)).
+
+If a step fails before you delete embedded resources, see [Rollback](rollback.md).
 
 !!! warning "Do not combine upgrades"
     Do not run the 3scale upgrade and the OpenShift upgrade in the same maintenance window.

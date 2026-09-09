@@ -1,11 +1,8 @@
 # Externalize Redis
 
-Follow the official *Redis 6 upgrade — On-cluster* chapter. You need two instances (backend and system). Redis Cluster is not supported. Full Linux runbook: `docs/runbooks/02-externalize-redis.md`.
+Follow the official *Redis 6 upgrade — On-cluster* chapter. You need two instances (backend and system). Redis Cluster is not supported. Full runbook: `docs/runbooks/02-externalize-redis.md` (Git Bash: `docs/runbooks/02-bis-externalize-redis-windows.md`).
 
 Use the same `export` variables as [Externalize PostgreSQL](externalize-postgresql.md). Set `REDIS_NAMESPACE=3scale-db`.
-
-!!! tip "Windows / Git Bash"
-    Read [Windows / Git Bash](windows.md) first. Do not use `oc cp` with Unix paths. Copy with `oc exec` + `bash -c` so the path stays inside the pod.
 
 ## 1. Scale down 3scale (keep embedded Redis up)
 
@@ -20,39 +17,12 @@ Wait for Redis to flush data to disk before the dump.
 
 ## 2. Copy `dump.rdb`
 
-=== "Linux"
-
-    ```bash
-    oc cp "$(oc get pods -l deployment=backend-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./backend-redis-dump.rdb
-    oc cp "$(oc get pods -l deployment=system-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./system-redis-dump.rdb
-    oc scale deployment/system-redis --replicas=0
-    oc scale deployment/backend-redis --replicas=0
-    ```
-
-=== "Windows / Git Bash"
-
-    ```bash
-    export MSYS_NO_PATHCONV=1
-    BACKEND_POD=$(oc get pods -l deployment=backend-redis -o jsonpath='{.items[0].metadata.name}')
-    SYSTEM_POD=$(oc get pods -l deployment=system-redis -o jsonpath='{.items[0].metadata.name}')
-
-    oc exec "$BACKEND_POD" -- bash -c 'redis-cli SAVE'
-    oc exec "$SYSTEM_POD" -- bash -c 'redis-cli SAVE'
-
-    oc exec "$BACKEND_POD" -- bash -c 'cat /var/lib/redis/data/dump.rdb' > ./backend-redis-dump.rdb
-    oc exec "$SYSTEM_POD" -- bash -c 'cat /var/lib/redis/data/dump.rdb' > ./system-redis-dump.rdb
-
-    ls -lh ./backend-redis-dump.rdb ./system-redis-dump.rdb
-    head -c 5 ./backend-redis-dump.rdb; echo
-    head -c 5 ./system-redis-dump.rdb; echo
-    ```
-
-    Both files must have size greater than 0 and start with `REDIS`. Then:
-
-    ```bash
-    oc scale deployment/system-redis --replicas=0
-    oc scale deployment/backend-redis --replicas=0
-    ```
+```bash
+oc cp "$(oc get pods -l deployment=backend-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./backend-redis-dump.rdb
+oc cp "$(oc get pods -l deployment=system-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./system-redis-dump.rdb
+oc scale deployment/system-redis --replicas=0
+oc scale deployment/backend-redis --replicas=0
+```
 
 ## 3. Deploy Redis 7
 
@@ -64,30 +34,13 @@ The **restore** ConfigMap sets `save ""` and `appendonly no` (required to load t
 
 ## 4. Restore RDB and rewrite AOF
 
-=== "Linux"
-
-    ```bash
-    export REDIS_NAMESPACE=3scale-db
-    oc cp ./backend-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=backend-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
-    oc cp ./system-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=system-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
-    oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
-    oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
-    ```
-
-=== "Windows / Git Bash"
-
-    ```bash
-    export MSYS_NO_PATHCONV=1
-    export REDIS_NAMESPACE=3scale-db
-    B_EXT=$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=backend-redis-external -o jsonpath='{.items[0].metadata.name}')
-    S_EXT=$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=system-redis-external -o jsonpath='{.items[0].metadata.name}')
-
-    oc exec -i -n "$REDIS_NAMESPACE" "$B_EXT" -- bash -c 'cat > /var/lib/redis/data/dump.rdb' < ./backend-redis-dump.rdb
-    oc exec -i -n "$REDIS_NAMESPACE" "$S_EXT" -- bash -c 'cat > /var/lib/redis/data/dump.rdb' < ./system-redis-dump.rdb
-
-    oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
-    oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
-    ```
+```bash
+export REDIS_NAMESPACE=3scale-db
+oc cp ./backend-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=backend-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
+oc cp ./system-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=system-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
+oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
+oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
+```
 
 When the pods are Ready, run `redis-cli BGREWRITEAOF` in each pod and wait for `aof_rewrite_in_progress = 0`. Re-read pod names after the restart.
 

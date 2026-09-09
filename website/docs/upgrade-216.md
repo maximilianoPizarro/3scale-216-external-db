@@ -31,14 +31,10 @@ APIcast operator-based deployments, if applicable, have their own 2.16 channel (
 
 ## If `system-app-pre` fails: `permission denied for schema public`
 
-PostgreSQL 15 revokes `CREATE` on schema `public` except for the schema owner. After a restore done as `postgres`, user `system` cannot run migrations:
+PostgreSQL 15 revokes `CREATE` on schema `public` except for the schema owner. After a restore done as `postgres`, user `system` cannot run migrations.
 
-```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- \
-  psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
-```
-
-Delete the `system-app-pre` Job and let the 3scale operator recreate it. Apply this grant during [Externalize PostgreSQL](externalize-postgresql.md). Apply it again if you skipped that step.
+!!! warning "PostgreSQL 15 grant required"
+    Run the full `GRANT USAGE, CREATE ON SCHEMA public` command during externalization — [Grant CREATE on schema `public`](externalize-postgresql.md#grant-create-on-schema-public). Delete the `system-app-pre` Job and let the 3scale operator recreate it.
 
 ## If version preflight fails
 

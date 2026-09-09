@@ -4,6 +4,9 @@ Values below reflect a **lab migration** on AWS. Replace placeholders in overlay
 
 Product matrix: [Supported Configurations](https://access.redhat.com/articles/2798521).
 
+!!! note "Re-check the matrix before production"
+    Red Hat updates [Supported Configurations](https://access.redhat.com/articles/2798521) with product micro releases. Confirm OpenShift, PostgreSQL, and Redis versions for **both** 3scale 2.15 and 2.16 on your target cluster before you schedule the maintenance window. The lab values below are a snapshot, not a substitute for the live article.
+
 ## Environment
 
 | Layer | Tested value |

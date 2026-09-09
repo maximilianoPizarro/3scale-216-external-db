@@ -24,5 +24,4 @@ Un corte de laboratorio suele llevar **unas pocas horas** cuando el cluster y el
 5. [Versiones probadas](tested-versions.es.md)
 6. [Operación día 2](day-2.es.md) (después del cutover)
 
-!!! tip "Windows / Git Bash"
-    Los comandos de este sitio asumen **Linux (bash)**. En **Git Bash**, leer primero [Windows / Git Bash](windows.es.md) y usar las pestañas **Windows / Git Bash** en los runbooks de PostgreSQL y Redis.
+Los comandos de este sitio asumen **Linux (bash)**. Para **Git Bash en Windows**, usar `docs/runbooks/01-bis-externalize-postgresql-windows.md` y `docs/runbooks/02-bis-externalize-redis-windows.md` en el repositorio.

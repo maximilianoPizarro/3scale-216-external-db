@@ -1,30 +1,15 @@
 # Externalize PostgreSQL
 
-Follow the official *PostgreSQL 10 upgrade — On-cluster* chapter. This page summarizes the procedure with manifests from this repository. Full Linux runbook: `docs/runbooks/01-externalize-postgresql.md`.
-
-!!! tip "Windows / Git Bash"
-    Read [Windows / Git Bash](windows.md) first. Use the **Windows / Git Bash** tab wherever commands differ. Export `MSYS_NO_PATHCONV=1` in every shell.
+Follow the official *PostgreSQL 10 upgrade — On-cluster* chapter. This page summarizes the procedure with manifests from this repository. Full runbook: `docs/runbooks/01-externalize-postgresql.md` (Git Bash: `docs/runbooks/01-bis-externalize-postgresql-windows.md`).
 
 ## Variables
 
-=== "Linux"
-
-    ```bash
-    export THREESCALE_NAMESPACE=3scale
-    export OPERATOR_NAMESPACE=3scale
-    export DB_NAMESPACE=3scale-db
-    oc project "$THREESCALE_NAMESPACE"
-    ```
-
-=== "Windows / Git Bash"
-
-    ```bash
-    export MSYS_NO_PATHCONV=1
-    export THREESCALE_NAMESPACE=3scale
-    export OPERATOR_NAMESPACE=3scale
-    export DB_NAMESPACE=3scale-db
-    oc project "$THREESCALE_NAMESPACE"
-    ```
+```bash
+export THREESCALE_NAMESPACE=3scale
+export OPERATOR_NAMESPACE=3scale
+export DB_NAMESPACE=3scale-db
+oc project "$THREESCALE_NAMESPACE"
+```
 
 Capture replica counts **before** you scale to 0 (see the runbook for the full list).
 
@@ -39,23 +24,11 @@ Leave `system-postgresql` at 1 replica.
 
 ## 2. Dump
 
-=== "Linux"
-
-    ```bash
-    POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
-    oc exec "$POSTGRES_POD" -- pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup
-    oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
-    ```
-
-=== "Windows / Git Bash"
-
-    ```bash
-    POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
-    oc exec "$POSTGRES_POD" -- bash -c 'pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup'
-    oc cp "${POSTGRES_POD}:/tmp/db_dump.backup" ./db_dump.backup
-    ```
-
-    `tar: Removing leading '/' from member names` is expected. The local file must start with magic `PGDMP` and have size greater than 0.
+```bash
+POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
+oc exec "$POSTGRES_POD" -- pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup
+oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
+```
 
 ## 3. Deploy PostgreSQL 15
 
@@ -70,30 +43,17 @@ oc create secret generic system-database \
 oc apply -k kustomize/bases/postgresql -n "$DB_NAMESPACE"
 ```
 
-If `base64 -d` fails on Git Bash, use `base64 --decode`. Confirm `DB_USER` and `DB_PASSWORD` are not empty before the pod initializes the PVC.
+Confirm `DB_USER` and `DB_PASSWORD` are not empty before the pod initializes the PVC.
 
 Deploy **only** PostgreSQL 15 first. Do not apply the full `lab` overlay yet. That overlay also creates Redis 7. Wait for `system-postgresql-external` at `1/1`.
 
 ## 4. Restore
 
-=== "Linux"
-
-    ```bash
-    oc cp ./db_dump.backup "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')":/tmp -n "$DB_NAMESPACE"
-    oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
-      bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
-    ```
-
-=== "Windows / Git Bash"
-
-    Put the filename on the remote destination. A bare `oc cp ... :/tmp` is rewritten by Git Bash.
-
-    ```bash
-    PG15_POD=$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')
-    oc cp ./db_dump.backup "${PG15_POD}:/tmp/db_dump.backup" -n "$DB_NAMESPACE"
-    oc rsh -n "$DB_NAMESPACE" "$PG15_POD" \
-      bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
-    ```
+```bash
+oc cp ./db_dump.backup "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')":/tmp -n "$DB_NAMESPACE"
+oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
+  bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
+```
 
 The warning `schema "public" already exists` is expected.
 
@@ -101,19 +61,10 @@ The warning `schema "public" already exists` is expected.
 
 PostgreSQL 15 does not grant `CREATE` on schema `public` to the application user. Without this step, the `system-app-pre` job fails on the 2.16 upgrade with `permission denied for schema public`.
 
-=== "Linux"
-
-    ```bash
-    oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
-      psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
-    ```
-
-=== "Windows / Git Bash"
-
-    ```bash
-    oc exec -n "$DB_NAMESPACE" "$PG15_POD" -- bash -c \
-      'psql -U postgres -d system -c "GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;"'
-    ```
+```bash
+oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
+  psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
+```
 
 ## 5. Patch the secret and the APIManager
 

@@ -66,9 +66,7 @@ oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/sys
 | Redis backend | `redis-cli SAVE`, luego `dump.rdb` / AOF + snapshot | `backend-redis-storage-external` |
 | Redis system | igual | `system-redis-storage-external` |
 
-Guardar copia de los secrets de conexión. Tras un restore como usuario `postgres`, volver a aplicar el GRANT de PostgreSQL 15 (abajo).
-
-En Git Bash, exportar `MSYS_NO_PATHCONV=1` y seguir [Windows / Git Bash](windows.es.md) antes de cualquier path de `oc exec` que empiece por `/`.
+Guardar copia de los secrets de conexión. Tras un restore como usuario `postgres`, volver a aplicar el GRANT de PostgreSQL 15 ([GRANT CREATE en schema `public`](externalize-postgresql.es.md#grant-create-en-schema-public)).
 
 !!! warning "No hay alta disponibilidad"
     Cada base es **una réplica**, `Recreate`, ReadWriteOnce. Red Hat no soporta Redis Cluster para 3scale. Un drain de nodo o un rollout de imagen es ventana de mantenimiento.
@@ -113,12 +111,14 @@ Vigilar llenado de PVC y memoria de Redis. Redis vive en RAM.
 
 ## GRANT de PostgreSQL 15
 
-Mantener `USAGE, CREATE` en el schema `public` para el usuario `system`. Si se restaura un dump como `postgres` y se omite esto, `system-app-pre` falla con `permission denied for schema public`:
+!!! warning "Comando canónico de GRANT"
+    Mantener `USAGE, CREATE` en el schema `public` para el usuario `system`. Si se restaura un dump como `postgres` y se omite esto, `system-app-pre` falla con `permission denied for schema public`. Comando completo: [GRANT CREATE en schema `public`](externalize-postgresql.es.md#grant-create-en-schema-public).
 
-```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- \
-  psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
-```
+## Diagrama de ownership
+
+![Rutas de ownership y rollback](images/ownership-and-rollback.png)
+
+Rollback antes de borrar recursos embebidos: [Rollback](rollback.es.md).
 
 ## Riesgos de GitOps
 
@@ -136,6 +136,7 @@ No combinar un upgrade de OpenShift con uno del operador 3scale. Un micro de 2.1
 
 ## Siguientes pasos
 
+- [Rollback](rollback.es.md)
 - [Documentación oficial](official-docs.es.md)
 - [FAQ de operación](faq.es.md)
 - [GitOps y RHACM](gitops.es.md)

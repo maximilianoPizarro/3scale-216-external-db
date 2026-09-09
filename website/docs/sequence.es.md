@@ -1,10 +1,16 @@
 # Secuencia de migración
 
-El valor por defecto es Linux/bash. En Git Bash, exportar `MSYS_NO_PATHCONV=1` y seguir [Windows / Git Bash](windows.es.md). Esta página se alinea con `docs/runbooks/00-secuencia-y-matriz.md` del repositorio.
+El valor por defecto es Linux/bash. Esta página se alinea con `docs/runbooks/00-secuencia-y-matriz.md` del repositorio.
 
 Completar [Requisitos previos](prerequisites.es.md) antes del paso 1.
 
 ## Orden de operaciones
+
+![Secuencia de migración](images/migration-sequence.png)
+*Diagrama en inglés — fases: operador 2.15 → dump → `3scale-db` → restore → GRANT → secrets → operador 2.16 → día 2.*
+
+![Estados del namespace 3scale-db](images/namespace-3scale-db-states.png)
+*Diagrama en inglés — vacío → restore PG → restore Redis (`save ""`) → persist (`appendonly yes`) → día 2.*
 
 1. **Instalar 3scale 2.15** en un cluster de prueba — operador 3scale + APIManager con bases embebidas ([Instalar 3scale 2.15 (lab)](install-lab.es.md)).
 2. **Confirmar la matriz**: versión de OpenShift soportada por 2.15 **y** 2.16; último CSV en el canal `threescale-2.15`.
@@ -17,6 +23,8 @@ Completar [Requisitos previos](prerequisites.es.md) antes del paso 1.
 9. **Actualizar el operador 3scale** al canal `threescale-2.16` ([Actualizar operador a 2.16](upgrade-216.es.md)).
 10. **Actualizar OpenShift** después, si aplica, según [Supported Configurations](https://access.redhat.com/articles/2798521).
 11. **Operar el día 2** en `3scale-db`: Redis persistente, backups, digest anclado ([Operación día 2](day-2.es.md)).
+
+Si un paso falla antes de borrar recursos embebidos, ver [Rollback](rollback.es.md).
 
 !!! warning "No combinar upgrades"
     No ejecutar el upgrade de 3scale y el de OpenShift en la misma ventana de mantenimiento.

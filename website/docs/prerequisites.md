@@ -20,8 +20,7 @@ This lab was tested on OpenShift 4.19. See [Tested versions](tested-versions.md)
 
 - `oc` logged in to the target cluster
 - Pull access to `registry.redhat.io` for RHSCL images
-- Linux bash **or** Git Bash on Windows — not PowerShell for dump/restore
-- On Windows, read [Windows / Git Bash](windows.md) before you copy paths that start with `/`
+- Linux bash for dump/restore (Git Bash on Windows: runbooks `01-bis` / `02-bis` in `docs/runbooks/`)
 
 ## Storage
 

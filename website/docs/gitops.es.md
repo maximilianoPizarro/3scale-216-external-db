@@ -43,6 +43,17 @@ Destino: `3scale-db`. `prune: false` para no borrar PVC.
 
 Tras el restore de Redis, cambiar `redis-config.path` a `kustomize/bases/redis-config-persist` en el ApplicationSet de BDD. Dejarlo así el día 2. `selfHeal: true` revierte un edit manual del ConfigMap. Ver [Operación día 2](day-2.es.md).
 
+## Trampas de GitOps
+
+!!! danger "Tres errores habituales en el cutover"
+    | Riesgo | Qué hacer |
+    |--------|-----------|
+    | El ApplicationSet sigue en `redis-config-restore` | Cambiar el path a `redis-config-persist` después del cutover. `selfHeal: true` revierte un edit manual del ConfigMap y un restart **borra datos de Redis**. |
+    | `prune: true` en Applications de external-db | Dejar `prune: false` para que un sync no borre PVC. |
+    | Mezclar GitOps in-cluster y RHACM | Un solo controlador por cluster destino. |
+
+    Checklist completo de día 2: [Operación día 2](day-2.es.md). Rutas de rollback: [Rollback](rollback.es.md).
+
 ## RHACM (hub)
 
 Misma separación:

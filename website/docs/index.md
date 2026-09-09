@@ -24,5 +24,4 @@ A lab cutover typically takes **a few hours** once the cluster and RWX storage a
 5. [Tested versions](tested-versions.md)
 6. [Day 2 operations](day-2.md) (after the cutover)
 
-!!! tip "Windows / Git Bash"
-    Command examples on this site default to **Linux (bash)**. If you work in **Git Bash**, read [Windows / Git Bash](windows.md) first, then use the **Windows / Git Bash** tabs in the PostgreSQL and Redis runbooks.
+Command examples on this site assume **Linux (bash)**. For **Git Bash on Windows**, use `docs/runbooks/01-bis-externalize-postgresql-windows.md` and `docs/runbooks/02-bis-externalize-redis-windows.md` in the repository.

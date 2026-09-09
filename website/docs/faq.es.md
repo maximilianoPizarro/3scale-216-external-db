@@ -4,23 +4,11 @@ Preguntas habituales al pasar de 3scale 2.15 (BDD embebidas) a 2.16, con Postgre
 
 ## ¿“External” implica sacar las BDD del cluster?
 
-No. En la documentación de Red Hat, *external* significa que las bases **no forman parte de la instalación 3scale**. El operador 3scale no las reconcilia. Pueden vivir en el mismo cluster, incluso en el mismo namespace (no recomendado). Un namespace dedicado (`3scale-db` en este repositorio) es el patrón habitual.
-
-`zync-database` puede seguir como componente interno del operador.
+No. *External* significa que las bases quedan **fuera del ciclo de vida del operador 3scale** — pueden seguir in-cluster (por ejemplo namespace `3scale-db`). Explicación completa, tabla de reconciliación y límites del repo: [Motivación](why.es.md).
 
 ## ¿Quién opera logs y persistencia en disco?
 
-Tras marcar `spec.externalComponents`, el operador 3scale **deja de reconciliar** el Deployment y el PVC:
-
-| Área | Responsable |
-|------|-------------|
-| Ciclo de vida del pod | Quien opera las BDD (estos manifiestos / GitOps) |
-| Persistencia | PVC + StorageClass + VolumeSnapshot / backups |
-| Logs | stdout/stderr → stack de logging del cluster |
-| Parches de imagen RHSCL | Quien opera las BDD (el operador 3scale ya no dispara ImageChange) |
-| Conexión desde 3scale | Secrets en el namespace de 3scale |
-
-Borrar el `APIManager` no debe borrar los PVC externos. Los recursos de este paquete no llevan `ownerReferences` del APIManager.
+Tras `externalComponents`, operás PostgreSQL y ambos Redis en `3scale-db` (pods, PVC, imágenes, backups, logs). El operador 3scale sigue gestionando `system-app`, APIcast y Zync. Matriz de ownership y checklist de día 2: [Operación día 2](day-2.es.md). Motivación: [Motivación](why.es.md).
 
 ## ¿Qué versiones de imagen hay que fijar?
 
@@ -55,4 +43,4 @@ Runbooks detallados en el repositorio:
 5. `docs/runbooks/04-ops-logs-persistencia-imagenes.md`
 6. `docs/runbooks/06-day-2.md`
 
-En Windows, usar [Windows / Git Bash](windows.es.md) y los runbooks `01-bis` / `02-bis`. Referencia: `docs/faq-externalizacion.md`.
+En Windows (Git Bash), usar `docs/runbooks/01-bis-externalize-postgresql-windows.md` y `docs/runbooks/02-bis-externalize-redis-windows.md`. Referencia: `docs/faq-externalizacion.md`.

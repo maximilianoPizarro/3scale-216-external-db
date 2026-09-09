@@ -53,7 +53,7 @@ GitOps: `oc apply -k gitops/` (phase 1) then `oc apply -k gitops/external-db` (p
 
 ## Windows / Git Bash
 
-Use Git Bash, not PowerShell. Site page: [Windows / Git Bash](https://maximilianopizarro.github.io/3scale-216-external-db/windows/). PostgreSQL and Redis runbooks on the site include a **Windows / Git Bash** tab. Clone-friendly copies:
+Use Git Bash, not PowerShell:
 
 - [docs/runbooks/01-bis-externalize-postgresql-windows.md](docs/runbooks/01-bis-externalize-postgresql-windows.md)
 - [docs/runbooks/02-bis-externalize-redis-windows.md](docs/runbooks/02-bis-externalize-redis-windows.md)
@@ -115,7 +115,7 @@ GitOps: `oc apply -k gitops/` (fase 1) y luego `oc apply -k gitops/external-db` 
 
 ## Windows / Git Bash
 
-Usar Git Bash, no PowerShell. Página del sitio: [Windows / Git Bash](https://maximilianopizarro.github.io/3scale-216-external-db/es/windows/). Los runbooks de PostgreSQL y Redis en el sitio incluyen una pestaña **Windows / Git Bash**. Copias para clonar el repo:
+Usar Git Bash, no PowerShell:
 
 - [docs/runbooks/01-bis-externalize-postgresql-windows.md](docs/runbooks/01-bis-externalize-postgresql-windows.md)
 - [docs/runbooks/02-bis-externalize-redis-windows.md](docs/runbooks/02-bis-externalize-redis-windows.md)

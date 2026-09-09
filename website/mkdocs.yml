@@ -68,7 +68,7 @@ plugins:
             Externalize PostgreSQL: Externalizar PostgreSQL
             Externalize Redis: Externalizar Redis
             Upgrade operator to 2.16: Actualizar operador a 2.16
-            Windows / Git Bash: Windows / Git Bash
+            Rollback: Rollback
             GitOps and RHACM: GitOps y RHACM
             Day 2 operations: Operación día 2
             Operations FAQ: FAQ de operación
@@ -84,7 +84,7 @@ nav:
   - Externalize PostgreSQL: externalize-postgresql.md
   - Externalize Redis: externalize-redis.md
   - Upgrade operator to 2.16: upgrade-216.md
-  - Windows / Git Bash: windows.md
+  - Rollback: rollback.md
   - GitOps and RHACM: gitops.md
   - Day 2 operations: day-2.md
   - Operations FAQ: faq.md

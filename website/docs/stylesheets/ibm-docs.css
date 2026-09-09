@@ -60,10 +60,66 @@ body {
   background-color: var(--doc-bg);
 }
 
-/* Header: light bar + 3px top rule (IBM Docs uses a rule; here it is gray, not blue). */
-.md-header {
-  background-color: var(--doc-layer);
-  color: var(--doc-text);
+/* Keep nav + article + TOC as one band (Material defaults to ~61rem and space-between). */
+.md-grid {
+  max-width: 92rem;
+}
+
+.md-main__inner {
+  margin-top: 0;
+}
+
+@media screen and (min-width: 76.25em) {
+  .md-main__inner {
+    display: flex;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 1.25rem;
+    margin: 0 1.25rem 0 0.5rem;
+  }
+
+  .md-sidebar--primary {
+    width: 16.5rem;
+  }
+
+  .md-sidebar--secondary {
+    width: 13.5rem;
+  }
+
+  .md-sidebar {
+    padding-top: 0.75rem;
+  }
+
+  .md-content {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .md-content__inner {
+    margin: 0;
+    padding-top: 0.85rem;
+    padding-bottom: 2rem;
+  }
+
+  .md-sidebar--secondary .md-nav {
+    margin-left: 0;
+  }
+}
+
+@media screen and (min-width: 100em) {
+  .md-grid {
+    max-width: 100rem;
+  }
+}
+
+/* Header: light bar + 3px top rule. Override Material primary=black (otherwise title is invisible). */
+.md-header,
+[data-md-color-primary="black"] .md-header {
+  background-color: var(--doc-layer) !important;
+  color: var(--doc-text) !important;
   box-shadow: none;
   border-bottom: 1px solid var(--doc-border);
 }
@@ -75,30 +131,62 @@ body {
   background: var(--doc-header-rule);
 }
 
+.md-header__inner {
+  padding-top: 0;
+}
+
 .md-header__title,
 .md-header .md-header__button,
 .md-header .md-source,
 .md-header .md-source__repository,
-.md-header .md-tabs {
-  color: var(--doc-text);
+.md-header .md-tabs,
+.md-header .md-ellipsis {
+  color: var(--doc-text) !important;
 }
 
-.md-header .md-search__input {
-  background-color: var(--doc-bg);
-  color: var(--doc-text);
+.md-header .md-header__button svg {
+  fill: currentColor;
+}
+
+.md-header .md-search__form {
+  background-color: var(--doc-bg) !important;
   border-radius: 0;
+  box-shadow: none;
+}
+
+.md-header .md-search__input,
+.md-header .md-search__input + .md-search__icon {
+  color: var(--doc-text) !important;
+  background-color: transparent;
 }
 
 .md-header .md-search__input::placeholder {
   color: var(--doc-text-secondary);
 }
 
-.md-header .md-search__form {
-  border-radius: 0;
+.md-header .md-header__source {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: auto;
+  max-width: none;
+  padding-right: 0.25rem;
 }
 
 .md-header .md-header__source .md-source {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--doc-text) !important;
   opacity: 1;
+}
+
+.md-header .md-header__source .md-source svg {
+  fill: currentColor;
+}
+
+.md-header .md-header__source .md-source__icon {
+  color: var(--doc-text);
 }
 
 .md-search-result__meta {

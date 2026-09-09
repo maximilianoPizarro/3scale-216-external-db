@@ -14,6 +14,8 @@
 10. Upgrade de OpenShift **después**, si aplica, según [Supported Configurations](https://access.redhat.com/articles/2798521).
 11. Día 2 en `3scale-db`: Redis persistente, backups, digest ([06-day-2.md](06-day-2.md)).
 
+Si un paso falla antes de borrar recursos embebidos: [07-rollback.md](07-rollback.md) (inglés: [en/07-rollback.md](en/07-rollback.md)). Sitio: `website/docs/rollback.md`.
+
 No combinar el salto de 3scale y el de OCP en la misma ventana.
 
 ## Laboratorio vs destino

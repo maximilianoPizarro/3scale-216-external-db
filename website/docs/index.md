@@ -6,12 +6,15 @@ Use it to **externalize** PostgreSQL (system) and Redis (system and backend) **i
 
 A lab cutover typically takes **a few hours** once the cluster and RWX storage are ready. Production duration depends on database size and the maintenance window.
 
+!!! note "Lab-validated package"
+    Versions and storage defaults reflect a **lab migration** — see [Tested versions](tested-versions.md). Reconfirm [Supported Configurations](https://access.redhat.com/articles/2798521) and adapt placeholders (`REPLACE_*`) and StorageClasses to your cluster before you apply manifests.
+
 ## What you get
 
 | Area | Location in the repo |
 |------|----------------------|
 | Kustomize bases and overlays | `kustomize/` |
-| Operational runbooks (Spanish, clone-friendly) | `docs/runbooks/` |
+| Operational runbooks (clone-friendly) | `docs/runbooks/` (ES), `docs/runbooks/en/` (EN) |
 | OpenShift GitOps / Argo CD | `gitops/` |
 | RHACM hub patterns | `gitops/rhacm/` |
 

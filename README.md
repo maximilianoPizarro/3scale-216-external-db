@@ -15,12 +15,25 @@ Starting with 2.16, the 3scale operator **stops reconciling** those embedded dat
 
 **Official guide:** [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index)
 
+Validated in lab — see [tested versions](website/docs/tested-versions.md). Adapt placeholders (`REPLACE_*`) and StorageClasses to your cluster before you apply manifests. This package complements the official Red Hat guide; it does not replace it.
+
+## How to use this repository
+
+1. Confirm [prerequisites](website/docs/prerequisites.md) and the [Supported Configurations](https://access.redhat.com/articles/2798521) matrix for **both** 3scale 2.15 and 2.16 on your OpenShift version.
+2. Edit placeholders: `REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID`, and `REPLACE_REPO_URL` (GitOps).
+3. Install 3scale **2.15** with embedded databases and validate portals ([install lab](website/docs/install-lab.md) or runbook `05`).
+4. Externalize PostgreSQL and Redis in-cluster (runbooks `01` and `02`; Git Bash: `01-bis` / `02-bis`).
+5. Upgrade the operator to **2.16**, then operate day 2 in `3scale-db` (runbooks `03`, `06`; rollback: `07`).
+
+Full sequence: [documentation site — Migration sequence](https://maximilianopizarro.github.io/3scale-216-external-db/sequence/).
+
 ## Repository layout
 
 | Path | Description |
 |------|-------------|
 | [website/](website/) | MkDocs Material site (EN default, ES at `/es/`) |
 | [docs/runbooks/](docs/runbooks/) | Operational runbooks (Spanish, clone-friendly) |
+| [docs/runbooks/en/](docs/runbooks/en/) | Operational runbooks (English, clone-friendly) |
 | [docs/faq-externalizacion.md](docs/faq-externalizacion.md) | Logs, PVC, images, operations FAQ |
 | [kustomize/](kustomize/) | Operator OLM, APIManager, external DB manifests |
 | [gitops/](gitops/) | Phase 1: operator. [gitops/external-db](gitops/external-db/): phase 2 DBs |
@@ -84,12 +97,25 @@ A partir de 2.16, el operador 3scale **deja de reconciliar** esas bases embebida
 
 **Guía oficial:** [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index)
 
+Validado en laboratorio — ver [versiones probadas](website/docs/tested-versions.es.md). Adaptar placeholders (`REPLACE_*`) y StorageClasses al cluster antes de aplicar manifiestos. Este paquete complementa la guía oficial de Red Hat; no la reemplaza.
+
+## Cómo usar este repositorio
+
+1. Confirmar [requisitos previos](website/docs/prerequisites.es.md) y la matriz [Supported Configurations](https://access.redhat.com/articles/2798521) para **2.15 y 2.16** en la versión de OpenShift del cluster.
+2. Editar placeholders: `REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID` y `REPLACE_REPO_URL` (GitOps).
+3. Instalar 3scale **2.15** con bases embebidas y validar portales ([instalar lab](website/docs/install-lab.es.md) o runbook `05`).
+4. Externalizar PostgreSQL y Redis in-cluster (runbooks `01` y `02`; Git Bash: `01-bis` / `02-bis`).
+5. Actualizar el operador a **2.16** y operar el día 2 en `3scale-db` (runbooks `03`, `06`; rollback: `07`).
+
+Secuencia completa: [sitio — Secuencia de migración](https://maximilianopizarro.github.io/3scale-216-external-db/es/sequence/).
+
 ## Contenido del repositorio
 
 | Ruta | Descripción |
 |------|-------------|
 | [website/](website/) | Sitio MkDocs Material (EN por defecto, ES en `/es/`) |
 | [docs/runbooks/](docs/runbooks/) | Runbooks operativos (español) |
+| [docs/runbooks/en/](docs/runbooks/en/) | Runbooks operativos (inglés) |
 | [docs/faq-externalizacion.md](docs/faq-externalizacion.md) | FAQ: logs, PVC, imágenes |
 | [kustomize/](kustomize/) | Operador OLM, APIManager, manifiestos BDD |
 | [gitops/](gitops/) | Fase 1: operador. [gitops/external-db](gitops/external-db/): fase 2 BDD |

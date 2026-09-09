@@ -34,13 +34,10 @@ Sí. Usar 4.19 para validar 2.16 con BDD self-managed. En el cluster a migrar, c
 
 ## ¿Dónde está el procedimiento completo?
 
-Runbooks detallados en el repositorio:
+El sitio cubre el procedimiento en inglés/español. Runbooks para clonar el repo:
 
-1. `docs/runbooks/00-secuencia-y-matriz.md`
-2. `docs/runbooks/01-externalize-postgresql.md`
-3. `docs/runbooks/02-externalize-redis.md`
-4. `docs/runbooks/03-upgrade-215-to-216.md`
-5. `docs/runbooks/04-ops-logs-persistencia-imagenes.md`
-6. `docs/runbooks/06-day-2.md`
+**Inglés:** `docs/runbooks/en/` (`00`–`07`, incluye variantes Windows `01-bis` / `02-bis`).
 
-En Windows (Git Bash), usar `docs/runbooks/01-bis-externalize-postgresql-windows.md` y `docs/runbooks/02-bis-externalize-redis-windows.md`. Referencia: `docs/faq-externalizacion.md`.
+**Español:** `docs/runbooks/` (mismos números).
+
+En Windows (Git Bash), usar `docs/runbooks/01-bis-externalize-postgresql-windows.md` y `docs/runbooks/02-bis-externalize-redis-windows.md` (o las copias en `en/`). Referencia: `docs/faq-externalizacion.md`. Si el cutover falla: [Rollback](rollback.es.md).

@@ -6,12 +6,15 @@ Sirve para **externalizar** PostgreSQL (system) y Redis (system y backend) **in-
 
 Un corte de laboratorio suele llevar **unas pocas horas** cuando el cluster y el almacenamiento RWX ya están listos. En producción el tiempo depende del tamaño de las bases y de la ventana de mantenimiento.
 
+!!! note "Paquete validado en laboratorio"
+    Las versiones y los valores por defecto de almacenamiento reflejan una **migración de lab** — ver [Versiones probadas](tested-versions.es.md). Reconfirmar [Supported Configurations](https://access.redhat.com/articles/2798521) y adaptar placeholders (`REPLACE_*`) y StorageClasses al cluster antes de aplicar manifiestos.
+
 ## Qué incluye
 
 | Área | Ubicación en el repo |
 |------|----------------------|
 | Bases y overlays Kustomize | `kustomize/` |
-| Runbooks operativos (español) | `docs/runbooks/` |
+| Runbooks operativos (para clonar) | `docs/runbooks/` (ES), `docs/runbooks/en/` (EN) |
 | OpenShift GitOps / Argo CD | `gitops/` |
 | Patrones RHACM (hub) | `gitops/rhacm/` |
 

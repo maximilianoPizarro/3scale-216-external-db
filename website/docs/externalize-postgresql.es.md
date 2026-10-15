@@ -1,6 +1,8 @@
 # Externalizar PostgreSQL
 
-Seguir el capítulo oficial *PostgreSQL 10 upgrade — On-cluster*. Esta página resume el procedimiento con los manifiestos de este repositorio. Runbook completo: `docs/runbooks/01-externalize-postgresql.md` (Git Bash: `docs/runbooks/01-bis-externalize-postgresql-windows.md`).
+Esta página es el mismo procedimiento que `docs/runbooks/01-externalize-postgresql.md`. En Git Bash, exportar `MSYS_NO_PATHCONV=1` antes de las rutas de `oc cp` y `pg_dump`. `docs/runbooks/01-bis-externalize-postgresql-windows.md` solo agrega esa regla.
+
+GitOps escribe el Secret de conexión. No hacer `oc patch` de `system-database` ni del APIManager. Argo pisa ese parche. Copiar el usuario y la contraseña embebidos a Vault (`secret/hub/3scale-postgresql`). ExternalSecret arma la URL con `urlquery`, así la contraseña no queda en el historial del shell.
 
 ## Variables
 
@@ -11,9 +13,19 @@ export DB_NAMESPACE=3scale-db
 oc project "$THREESCALE_NAMESPACE"
 ```
 
-Capturar las réplicas **antes** de escalar a 0 (lista completa en el runbook).
+Antes del primer scale-down, guardar las réplicas fuera del repo. No depender de una lista escrita en el runbook:
 
-## 1. Escalar 3scale y el operador 3scale
+```bash
+oc get deploy -n "$THREESCALE_NAMESPACE" -o json > "$HOME/3scale-replicas-before-cutover.json"
+```
+
+El Deployment del operador en el namespace `3scale` es `threescale-operator-controller-manager-v2` en los CSV 0.12 y 0.13. Confirmar el nombre; puede cambiar:
+
+```bash
+oc get deploy -n "$OPERATOR_NAMESPACE" -o name
+```
+
+## 1. Escalar a 0 y dejar PostgreSQL embebido en 1
 
 ```bash
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=0
@@ -22,60 +34,61 @@ oc scale deployment/{system-memcache,zync-database,apicast-production,apicast-st
 
 Dejar `system-postgresql` en 1 réplica.
 
-## 2. Dump
+## 2. Dump, checksum y permisos del archivo
 
 ```bash
 POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
-oc exec "$POSTGRES_POD" -- pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup
+oc exec "$POSTGRES_POD" -- bash -c 'pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup'
 oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
+sha256sum ./db_dump.backup
+wc -c ./db_dump.backup
+chmod 600 ./db_dump.backup
 ```
+
+Anotar checksum y tamaño. Después de cada `oc cp` posterior, volver a correr `sha256sum` y comparar. Borrar el dump al terminar la migración. No commitearlo.
 
 ## 3. Desplegar PostgreSQL 15
 
-```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-```
+Poner `extraValueFiles` del Pattern en `/values-cutover.yaml`. Ese archivo enciende el chart `external-db` y deja `externalComponents` en false. Esperar `system-postgresql-external` en `1/1`. El mismo chart levanta Redis 7 en `configMode: restore`. Cargar `dump.rdb` en el procedimiento de Redis antes de `/values-216-external.yaml`.
 
-Copiar el mismo usuario y password a Vault (`secret/hub/3scale-postgresql`) y poner `extraValueFiles` del Pattern en `/values-cutover.yaml`. Ese archivo enciende el chart `external-db` y deja `externalComponents` en false, así los Secrets del namespace `3scale` siguen en las bases embebidas hasta que termine el restore. Esperar `system-postgresql-external` en `1/1`. Redis 7 sube en el mismo chart con `configMode: restore`; cargar `dump.rdb` en el runbook de Redis antes de pasar a `values-216-external.yaml`.
+Una NetworkPolicy del chart permite TCP 5432 y 6379 solo desde los namespaces `3scale` y `3scale-db`.
 
-## 4. Restore
+## 4. Restore y integridad
 
 ```bash
-oc cp ./db_dump.backup "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')":/tmp -n "$DB_NAMESPACE"
-oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
-  bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
+EXT_POD=$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')
+oc cp ./db_dump.backup "$EXT_POD":/tmp/db_dump.backup -n "$DB_NAMESPACE"
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- sha256sum /tmp/db_dump.backup
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
 ```
 
-El aviso `schema "public" already exists` es esperado.
+`schema "public" already exists` es esperado (PostgreSQL 15 crea `public` antes del restore). Cualquier otro error de `pg_restore` es un restore fallido. No tomar cualquier warning como éxito.
 
 ### GRANT CREATE en schema `public`
 
-PostgreSQL 15 no concede `CREATE` en el schema `public` al usuario de la aplicación. Sin este paso, el Job `system-app-pre` falla en el salto a 2.16 con `permission denied for schema public`.
+`GRANT CREATE` es el privilegio mínimo. `ALTER SCHEMA public OWNER TO system` es lo que deja correr las migraciones de `system-app-pre` como `system`. Aplicar los dos:
 
 ```bash
-oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- \
   psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- psql -U postgres -d system -c 'ANALYZE;'
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- psql -U postgres -d system -c \
+  "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY n_live_tup DESC;"
 ```
 
-## 5. Parchear el secret y el APIManager
+Comparar `n_live_tup` con la misma consulta en la base embebida. `ANALYZE` tiene que correr antes, si no los conteos quedan en cero.
 
-```bash
-oc get secret system-database -n "$THREESCALE_NAMESPACE" -o yaml > system-database-secret.yaml
-DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@system-postgresql-service.${DB_NAMESPACE}.svc.cluster.local/system"
-oc patch secret system-database -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$DB_URL\"}}"
-APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
-oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
-  -p '{"spec": {"externalComponents": {"system": {"database": true}}}}'
-```
+## 5. Apuntar 3scale a la base externa
 
-Eso desconecta el reconcile del operador 3scale sobre el PostgreSQL embebido y su PVC.
+Quedarse en `/values-cutover.yaml` hasta terminar el ciclo de Redis. Los Secrets del namespace `3scale` siguen apuntando a las bases embebidas. Después de cargar Redis, `/values-216-external.yaml` pone `externalComponents` y ExternalSecret reescribe las URL. No parchearlos a mano en el medio.
 
-## 6. Subir y validar
+## 6. Volver a escalar la aplicación
 
-Volver a subir **Redis embebido** (`backend-redis`, `system-redis`) antes del runbook de Redis. Restaurar el resto de réplicas. Luego validar portales y APIs.
+Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`. Volver a escalar el Redis embebido a su conteo anterior para poder volcarlo en el ciclo de Redis.
 
-Tras confirmar los datos, borrar el Deployment, PVC y Service de PostgreSQL embebido.
+Escalar `system-postgresql` embebido a 0. **Conservar** su Deployment, Service y PVC hasta aceptar el upgrade a 2.16. Borrarlos elimina el camino de rollback.
+
+Después correr el ciclo de Redis. El smoke test (login de admin, alta y lectura de una cuenta, una llamada por APIcast, Sidekiq sin atasco) es después de los dos ciclos, todavía en el canal `threescale-2.15`.
 
 !!! danger "No commitear secrets ni dumps"
-    No commitear archivos `*-secret.yaml`, `*.backup` ni `*.rdb`.
+    Nunca commitear `*-secret.yaml`, `*.backup` ni `*.rdb`.

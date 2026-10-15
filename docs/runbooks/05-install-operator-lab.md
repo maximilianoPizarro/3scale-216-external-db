@@ -1,6 +1,10 @@
 # Instalar el operador 3scale en un cluster de prueba
 
-La instalación es el Pattern CR `examples/pattern-cr/hub-215.yaml`. Hace falta el canal `threescale-2.15` y una StorageClass ReadWriteMany llamada `efs-sc`. Sin esas dos cosas, parar. No sustituir este runbook por `hub-216-singlenode.yaml`.
+La instalación es el Pattern CR `examples/pattern-cr/hub-215.yaml`. Hace falta el canal `threescale-2.15`. Sin ese canal, parar. No sustituir este runbook por `hub-216-singlenode.yaml`.
+
+EFS es el camino ReadWriteMany: StorageClass `efs-sc`. Sin EFS, la alternativa de laboratorio es Local Storage Operator (`redhat-operators`, canal `stable`, `OwnNamespace`, namespace `openshift-local-storage`) y `examples/local-storage/localvolume.yaml`. Reemplazar `NODE_NAME` y la ruta del disco. Esa clase también se llama `efs-sc`. No instalar EFS y el LocalVolume a la vez.
+
+El operador crea `system-storage` como ReadWriteMany. El PV local y `gp3-csi` son ReadWriteOnce. Recrear el PVC como ReadWriteOnce con el mismo `ownerReference`. En 4.21 de un nodo, el mismo recreado usa `gp3-csi` y 100Mi.
 
 ## 1. Pattern
 

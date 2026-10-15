@@ -1,86 +1,64 @@
 # Externalize Redis (6 → 7) in-cluster
 
-Follow the *Redis 6 upgrade - On-cluster* chapter. You need **two** instances (backend and system). Redis Cluster is not supported. Commands for **Linux/macOS**. On Git Bash (Windows): [02-bis-externalize-redis-windows.md](02-bis-externalize-redis-windows.md).
+Same procedure as `website/docs/externalize-redis.md`. On Git Bash, [02-bis-externalize-redis-windows.md](02-bis-externalize-redis-windows.md) only adds `MSYS_NO_PATHCONV=1`.
 
-Same `export` as [01-externalize-postgresql.md](01-externalize-postgresql.md) (`THREESCALE_NAMESPACE`, `OPERATOR_NAMESPACE`). `REDIS_NAMESPACE=3scale-db`.
+`values-cutover.yaml` is the only file with `allowRestore: true`. The chart refuses `configMode: restore` without that flag. That mode sets `save ""` and `appendonly no`: a restart does not rebuild data if the RDB was not loaded. Redis stays without auth only while loading. Auth starts with `/values-216-external.yaml`.
 
-## 1. Scale 3scale (leave embedded Redis up)
-
-This chapter assumes the PostgreSQL runbook **already scaled** `backend-redis` and `system-redis` back up. Operator to 0. Scale 3scale components to 0 **except** those two Redis instances:
+## 1. Scale down, leave embedded Redis up
 
 ```bash
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=0
 oc scale deployment/{system-memcache,zync-database,apicast-production,apicast-staging,backend-cron,backend-listener,backend-worker,system-app,system-sidekiq,system-searchd,zync,zync-que} --replicas=0
 ```
 
-Wait for Redis to flush to disk before the dump.
+Confirm the operator Deployment name. On 0.12 and 0.13 it is `threescale-operator-controller-manager-v2`.
 
-## 2. Copy dump.rdb
+## 2. SAVE, then copy `dump.rdb`
 
 ```bash
+for dep in backend-redis system-redis; do
+  pod=$(oc get pods -l deployment=$dep -o jsonpath='{.items[0].metadata.name}')
+  echo "$dep before $(oc exec "$pod" -- redis-cli DBSIZE) lastsave $(oc exec "$pod" -- redis-cli LASTSAVE)"
+  oc exec "$pod" -- redis-cli SAVE
+  echo "$dep after-save $(oc exec "$pod" -- redis-cli LASTSAVE)"
+done
 oc cp "$(oc get pods -l deployment=backend-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./backend-redis-dump.rdb
 oc cp "$(oc get pods -l deployment=system-redis -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb ./system-redis-dump.rdb
-```
-
-Then:
-
-```bash
+sha256sum ./backend-redis-dump.rdb ./system-redis-dump.rdb
+wc -c ./backend-redis-dump.rdb ./system-redis-dump.rdb
+chmod 600 ./backend-redis-dump.rdb ./system-redis-dump.rdb
 oc scale deployment/system-redis --replicas=0
 oc scale deployment/backend-redis --replicas=0
 ```
 
-## 3. Deploy Redis 7
+`LASTSAVE` must move forward. Do not wait for Redis to write on its own.
 
-`values-cutover.yaml` sets `threescale.redis.configMode` to `restore`. The ConfigMap sets `save ""` and `appendonly no` (required to load the RDB).
-
-Wait for `1/1` on `backend-redis-external` and `system-redis-external`.
-
-## 4. Restore RDB and AOF
+## 3. Load the RDB
 
 ```bash
 export REDIS_NAMESPACE=3scale-db
 oc cp ./backend-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=backend-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
 oc cp ./system-redis-dump.rdb "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=system-redis-external -o jsonpath='{.items[0].metadata.name}')":/var/lib/redis/data/dump.rdb -n "$REDIS_NAMESPACE"
+oc exec -n "$REDIS_NAMESPACE" deploy/backend-redis-external -- sha256sum /var/lib/redis/data/dump.rdb
+oc exec -n "$REDIS_NAMESPACE" deploy/system-redis-external -- sha256sum /var/lib/redis/data/dump.rdb
 oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
 oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
 ```
 
-When Ready:
+Compare `DBSIZE` with step 2. Then `BGREWRITEAOF` and wait for `aof_rewrite_in_progress:0`.
 
-```bash
-oc rsh -n "$REDIS_NAMESPACE" "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=backend-redis-external -o jsonpath='{.items[0].metadata.name}')" bash -c 'redis-cli BGREWRITEAOF'
-oc rsh -n "$REDIS_NAMESPACE" "$(oc get pods -n "$REDIS_NAMESPACE" -l deployment=system-redis-external -o jsonpath='{.items[0].metadata.name}')" bash -c 'redis-cli BGREWRITEAOF'
-```
+## 4. Smoke test and a fresh dump
 
-Wait for `aof_rewrite_in_progress = 0`.
+Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. Leave embedded PostgreSQL and Redis at 0 and keep their PVCs.
 
-## 5. Enable persistence
+On 2.15: admin login, create and read an account, one APIcast call, Sidekiq not stuck.
 
-Switch `extraValueFiles` to `/values-216-external.yaml` only after the RDB load and the portal checks. That file sets `configMode: persist` and Redis auth.
+Immediately before `/values-216-external.yaml`, repeat `pg_dump` and both `dump.rdb` files with checksums and `DBSIZE`.
 
-Restart Redis Deployments. Confirm the ConfigMap no longer has `save ""` and `appendonly` is `yes`.
+## 5. Persistence and auth
 
-## 6. Secrets and APIManager
-
-```bash
-oc get secret system-redis -n "$THREESCALE_NAMESPACE" -o yaml > system-redis-secret.yaml
-oc get secret backend-redis -n "$THREESCALE_NAMESPACE" -o yaml > backend-redis-secret.yaml
-BACKEND_REDIS_URL="redis://backend-redis-service.${REDIS_NAMESPACE}.svc.cluster.local:6379"
-oc patch secret backend-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"REDIS_STORAGE_URL\":\"$BACKEND_REDIS_URL/0\"}}"
-oc patch secret backend-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"REDIS_QUEUES_URL\":\"$BACKEND_REDIS_URL/1\"}}"
-SYSTEM_REDIS_URL="redis://system-redis-service.${REDIS_NAMESPACE}.svc.cluster.local:6379/1"
-oc patch secret system-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$SYSTEM_REDIS_URL\"}}"
-APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
-oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
-  -p '{"spec": {"externalComponents": {"system": {"redis": true}}}}'
-oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
-  -p '{"spec": {"externalComponents": {"backend": {"redis": true}}}}'
-```
-
-## 7. Scale up 3scale and delete embedded
-
-Validate portals and traffic. Only then delete Deployments/PVC/Service `backend-redis` and `system-redis` in the 3scale namespace.
+`/values-216-external.yaml` sets `configMode: persist`, auth, and `externalComponents`. Do not patch Secrets or the APIManager by hand. See [03-upgrade-215-to-216.md](03-upgrade-215-to-216.md).
 
 ## Rollback
 
-`externalComponents.*.redis: false`, restore secrets, let operator 2.15 manage Redis 6 again. Do not delete the new PVCs until confirmed.
+Until `system-app-pre` on 2.16, scale embedded Redis back up. Do not delete its PVCs. After that, restore the fresh dump.

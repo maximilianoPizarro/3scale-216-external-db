@@ -24,7 +24,7 @@ Anclar **digest SHA-256** del catálogo de Red Hat. No anclar el tag flotante.
 
 ## Redis restore vs persistencia
 
-Correr Redis en modo restore (`save ""`, `appendonly no`) solo durante el cutover para cargar `dump.rdb`. Después pasar a persistencia (`lab-persist` o `redis-config-persist`). Sin ese paso, un restart pierde datos.
+Correr Redis en modo restore (`save ""`, `appendonly no`) solo durante el cutover, y solo porque `values-cutover.yaml` pone `allowRestore: true`. Después pasar a `/values-216-external.yaml` (`configMode: persist`). Sin ese paso, un restart pierde datos.
 
 Checklist de día 2 (backups, digest, path de GitOps): [Operación día 2](day-2.es.md).
 

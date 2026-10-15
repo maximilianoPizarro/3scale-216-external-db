@@ -1,0 +1,106 @@
+{{- if and .Values.threescale.externalDb.enabled .Values.threescale.backup.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: external-db-backup
+  namespace: 3scale-db
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.threescale.storage.databaseClass | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.threescale.storage.databaseSize }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: system-postgresql-dump
+  namespace: 3scale-db
+spec:
+  schedule: {{ .Values.threescale.backup.schedule | default "0 3 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: {{ .Values.threescale.images.postgresql | quote }}
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  pg_dump -h system-postgresql-service -U "$POSTGRESQL_USER" -d system -F c -f "/backup/system-${stamp}.backup"
+                  find /backup -name 'system-*.backup' -mtime +7 -delete
+              env:
+                - name: POSTGRESQL_USER
+                  valueFrom:
+                    secretKeyRef:
+                      name: system-database
+                      key: DB_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: system-database
+                      key: DB_PASSWORD
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: external-db-backup
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: redis-save
+  namespace: 3scale-db
+spec:
+  schedule: {{ .Values.threescale.backup.schedule | default "0 3 * * *" | quote }}
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: redis-save
+              image: {{ .Values.threescale.images.redis | quote }}
+              command:
+                - bash
+                - -c
+                - |
+                  set -euo pipefail
+                  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+                  if [ -n "${REDIS_PASSWORD:-}" ]; then
+                    redis-cli -h system-redis-service -a "$REDIS_PASSWORD" --no-auth-warning SAVE
+                    redis-cli -h backend-redis-service -a "$REDIS_PASSWORD" --no-auth-warning SAVE
+                  else
+                    redis-cli -h system-redis-service SAVE
+                    redis-cli -h backend-redis-service SAVE
+                  fi
+                  echo "$stamp save-ok" >> /backup/redis-save.log
+              env:
+                - name: REDIS_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: system-redis-auth
+                      key: REDIS_PASSWORD
+                      optional: true
+              volumeMounts:
+                - name: backup
+                  mountPath: /backup
+          volumes:
+            - name: backup
+              persistentVolumeClaim:
+                claimName: external-db-backup
+{{- end }}

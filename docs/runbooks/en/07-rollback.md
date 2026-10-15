@@ -1,8 +1,6 @@
 # Rollback
 
-Use this runbook when cutover fails **before** you delete embedded Deployments and PVCs, or when the 3scale operator 2.16 upgrade loops on preflight. Clone-friendly copy: this file (Spanish: [../07-rollback.md](../07-rollback.md)).
-
-If embedded resources are already gone, rollback means **restore from backup** (PVC snapshot, `pg_dump`, `dump.rdb`), not flipping `externalComponents` back to embedded pods that no longer exist.
+Use this runbook when cutover fails **before** `system-app-pre` succeeds on 2.16. Until then, embedded Deployments stay at 0 replicas and their PVCs stay. After that job, rollback is a restore of the fresh dump. There is no OLM downgrade. Spanish: [../07-rollback.md](../07-rollback.md).
 
 ## Who owns what
 

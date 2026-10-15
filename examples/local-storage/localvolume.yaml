@@ -1,0 +1,52 @@
+# Lab alternative when the cluster has no ReadWriteMany StorageClass.
+# Creates a StorageClass named efs-sc so values-215.yaml, values-cutover.yaml,
+# and values-216-external.yaml apply unchanged. Do not install this and the
+# AWS EFS CSI class with the same name.
+# Replace NODE_NAME and the device path. Do not commit a real node or volume id.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: openshift-local-storage
+  labels:
+    openshift.io/cluster-monitoring: "true"
+---
+apiVersion: operators.coreos.com/v1
+kind: OperatorGroup
+metadata:
+  name: local-storage-operator
+  namespace: openshift-local-storage
+spec:
+  targetNamespaces:
+    - openshift-local-storage
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: local-storage-operator
+  namespace: openshift-local-storage
+spec:
+  channel: stable
+  installPlanApproval: Automatic
+  name: local-storage-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+---
+apiVersion: local.storage.openshift.io/v1
+kind: LocalVolume
+metadata:
+  name: system-storage
+  namespace: openshift-local-storage
+spec:
+  nodeSelector:
+    nodeSelectorTerms:
+      - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - NODE_NAME
+  storageClassDevices:
+    - storageClassName: efs-sc
+      volumeMode: Filesystem
+      fsType: xfs
+      devicePaths:
+        - /dev/disk/by-id/REPLACE_WITH_DISK_BY_ID

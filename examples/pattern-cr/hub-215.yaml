@@ -13,7 +13,7 @@ spec:
     - /values-215.yaml
   gitSpec:
     targetRepo: https://github.com/maximilianoPizarro/3scale-216-external-db.git
-    targetRevision: feat/image-digests-vault-eso
+    targetRevision: main
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: "0.9.*"

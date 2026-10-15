@@ -1,6 +1,8 @@
 # Externalizar PostgreSQL (10 → 15) in-cluster
 
-Sigue el capítulo *PostgreSQL 10 upgrade - On-cluster* de la guía oficial de 2.16. Resumen operativo con los manifiestos de este repo. Comandos para **Linux/macOS**. En Git Bash (Windows): [01-bis-externalize-postgresql-windows.md](01-bis-externalize-postgresql-windows.md).
+Procedimiento único, el mismo que `website/docs/externalize-postgresql.es.md`. En Git Bash: [01-bis-externalize-postgresql-windows.md](01-bis-externalize-postgresql-windows.md) solo agrega `MSYS_NO_PATHCONV=1`.
+
+GitOps escribe el Secret. No hacer `oc patch` de `system-database` ni del APIManager. Copiar usuario y contraseña a Vault (`secret/hub/3scale-postgresql`). ExternalSecret arma la URL con `urlquery`.
 
 ## Variables
 
@@ -9,127 +11,65 @@ export THREESCALE_NAMESPACE=3scale
 export OPERATOR_NAMESPACE=3scale
 export DB_NAMESPACE=3scale-db
 oc project "$THREESCALE_NAMESPACE"
+oc get deploy -n "$THREESCALE_NAMESPACE" -o json > "$HOME/3scale-replicas-before-cutover.json"
+oc get deploy -n "$OPERATOR_NAMESPACE" -o name
 ```
 
-Con el overlay `lab-operator`, operador y APIManager viven en `3scale`. Guardar réplicas antes de escalar a 0:
+En CSV 0.12 y 0.13 el Deployment del operador es `threescale-operator-controller-manager-v2`. El nombre puede cambiar.
 
-```bash
-SYSTEM_MEMCACHE_REPLICA_COUNT=$(oc get deployment system-memcache -o=jsonpath='{.spec.replicas}')
-ZYNC_DATABASE_REPLICA_COUNT=$(oc get deployment zync-database -o=jsonpath='{.spec.replicas}')
-APICAST_PRODUCTION_REPLICA_COUNT=$(oc get deployment apicast-production -o=jsonpath='{.spec.replicas}')
-APICAST_STAGING_REPLICA_COUNT=$(oc get deployment apicast-staging -o=jsonpath='{.spec.replicas}')
-BACKEND_CRON_REPLICA_COUNT=$(oc get deployment backend-cron -o=jsonpath='{.spec.replicas}')
-BACKEND_LISTENER_REPLICA_COUNT=$(oc get deployment backend-listener -o=jsonpath='{.spec.replicas}')
-BACKEND_WORKER_REPLICA_COUNT=$(oc get deployment backend-worker -o=jsonpath='{.spec.replicas}')
-SYSTEM_APP_REPLICA_COUNT=$(oc get deployment system-app -o=jsonpath='{.spec.replicas}')
-SYSTEM_SIDEKIQ_REPLICA_COUNT=$(oc get deployment system-sidekiq -o=jsonpath='{.spec.replicas}')
-SYSTEM_SEARCHD_REPLICA_COUNT=$(oc get deployment system-searchd -o=jsonpath='{.spec.replicas}')
-ZYNC_REPLICA_COUNT=$(oc get deployment zync -o=jsonpath='{.spec.replicas}')
-ZYNC_QUE_REPLICA_COUNT=$(oc get deployment zync-que -o=jsonpath='{.spec.replicas}')
-```
-
-## 1. Escalar 3scale y el operador
+## 1. Escalar a 0 y dejar PostgreSQL embebido en 1
 
 ```bash
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=0
 oc scale deployment/{system-memcache,zync-database,apicast-production,apicast-staging,backend-cron,backend-listener,backend-worker,backend-redis,system-app,system-redis,system-sidekiq,system-searchd,zync,zync-que} --replicas=0
 ```
 
-Dejar `system-postgresql` en 1.
-
-## 2. Dump
+## 2. Dump, checksum y permisos
 
 ```bash
 POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
-oc exec "$POSTGRES_POD" -- pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup
+oc exec "$POSTGRES_POD" -- bash -c 'pg_dump -U system -d system -F c -b -v -f /tmp/db_dump.backup'
 oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
+sha256sum ./db_dump.backup
+wc -c ./db_dump.backup
+chmod 600 ./db_dump.backup
 ```
+
+Comparar el checksum después de cada `oc cp`. Borrar el dump al terminar. No commitearlo.
 
 ## 3. Desplegar PostgreSQL 15
 
-Copiar credenciales al namespace de BDD y aplicar el overlay (o el ApplicationSet):
-
-```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create namespace "$DB_NAMESPACE" --dry-run=client -o yaml | oc apply -f -
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n "$DB_NAMESPACE"
-```
-
-Copiar el mismo usuario y password a Vault (`secret/hub/3scale-postgresql`) y poner `extraValueFiles` en `/values-cutover.yaml`. El chart `external-db` crea PostgreSQL 15 y Redis 7 (`configMode: restore`). `externalComponents` sigue en false, así los Secrets de `3scale` no cambian hasta el restore.
-
-Esperar `1/1` en `system-postgresql-external`.
+`extraValueFiles` pasa a `/values-cutover.yaml`. `externalComponents` sigue en false. Esperar `system-postgresql-external` en `1/1`. La NetworkPolicy del chart limita 5432 y 6379 a los namespaces `3scale` y `3scale-db`.
 
 ## 4. Restore
 
 ```bash
-oc cp ./db_dump.backup "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')":/tmp -n "$DB_NAMESPACE"
-oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
-  bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
+EXT_POD=$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')
+oc cp ./db_dump.backup "$EXT_POD":/tmp/db_dump.backup -n "$DB_NAMESPACE"
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- sha256sum /tmp/db_dump.backup
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- bash -c 'pg_restore -v -h localhost -U postgres -d system /tmp/db_dump.backup'
 ```
 
-El aviso `schema "public" already exists` es esperado. Verificar, por ejemplo:
+`schema "public" already exists` es esperado. Otro error de `pg_restore` es un restore fallido.
+
+`GRANT CREATE` es el mínimo. `ALTER SCHEMA ... OWNER TO system` es lo que deja correr `system-app-pre`:
 
 ```bash
-oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
-  psql -U postgres -d system -c 'SELECT org_name FROM accounts LIMIT 20;'
-```
-
-PostgreSQL 15 no da `CREATE` en el schema `public` al usuario de la app. Sin esto, el `system-app-pre` del salto a 2.16 falla con `permission denied for schema public`:
-
-```bash
-oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system-postgresql-external -o jsonpath='{.items[0].metadata.name}')" \
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- \
   psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- psql -U postgres -d system -c 'ANALYZE;'
+oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- psql -U postgres -d system -c \
+  "SELECT relname, n_live_tup FROM pg_stat_user_tables ORDER BY n_live_tup DESC;"
 ```
 
-## 5. Secret y APIManager
+Comparar `n_live_tup` con la base embebida. `ANALYZE` va primero.
 
-```bash
-oc get secret system-database -n "$THREESCALE_NAMESPACE" -o yaml > system-database-secret.yaml
-DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@system-postgresql-service.${DB_NAMESPACE}.svc.cluster.local/system"
-oc patch secret system-database -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$DB_URL\"}}"
-APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
-oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
-  -p '{"spec": {"externalComponents": {"system": {"database": true}}}}'
-```
+## 5. Volver a escalar
 
-Eso desconecta el reconcile del operador sobre el PostgreSQL embebido y su PVC.
+Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. Volver a subir Redis embebido para el ciclo siguiente. Escalar `system-postgresql` embebido a 0 y **conservar** Deployment, Service y PVC hasta aceptar 2.16.
 
-## 6. Subir 3scale y validar
-
-Hay que **volver a subir Redis embebido** (`backend-redis` / `system-redis`) antes del runbook de Redis; si no, el `oc cp` del `dump.rdb` no tiene pods.
-
-```bash
-oc scale deployment backend-redis --replicas=1
-oc scale deployment system-redis --replicas=1
-oc scale deployment system-memcache --replicas=$SYSTEM_MEMCACHE_REPLICA_COUNT
-oc scale deployment zync-database --replicas=$ZYNC_DATABASE_REPLICA_COUNT
-oc scale deployment backend-cron --replicas=$BACKEND_CRON_REPLICA_COUNT
-oc scale deployment backend-listener --replicas=$BACKEND_LISTENER_REPLICA_COUNT
-oc scale deployment backend-worker --replicas=$BACKEND_WORKER_REPLICA_COUNT
-oc scale deployment system-searchd --replicas=$SYSTEM_SEARCHD_REPLICA_COUNT
-oc scale deployment zync --replicas=$ZYNC_REPLICA_COUNT
-oc scale deployment zync-que --replicas=$ZYNC_QUE_REPLICA_COUNT
-oc scale deployment system-app --replicas=$SYSTEM_APP_REPLICA_COUNT
-oc scale deployment system-sidekiq --replicas=$SYSTEM_SIDEKIQ_REPLICA_COUNT
-oc scale deployment apicast-staging --replicas=$APICAST_STAGING_REPLICA_COUNT
-oc scale deployment apicast-production --replicas=$APICAST_PRODUCTION_REPLICA_COUNT
-oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=1
-```
-
-`system-postgresql` embebido debe quedar 0/0 (el operador ya no lo reconcilia). Validar portales y APIs.
-
-Solo cuando los datos estén correctos:
-
-```bash
-oc delete deployment system-postgresql -n "$THREESCALE_NAMESPACE"
-oc delete pvc postgresql-data -n "$THREESCALE_NAMESPACE"
-oc delete service system-postgresql -n "$THREESCALE_NAMESPACE"
-```
+El smoke test es después del ciclo de Redis, todavía en `threescale-2.15`.
 
 ## Rollback
 
-`externalComponents.system.database: false`, reaplicar `spec.system.database.postgresql: {}`, restaurar el secret desde `system-database-secret.yaml`, no borrar el PVC nuevo hasta confirmar el embebido.
+Hasta que `system-app-pre` termine bien en 2.16: volver `extraValueFiles` a `/values-215.yaml` y escalar el PostgreSQL embebido. No borrar su PVC. Después de ese Job, el rollback es el dump fresco. Ver [07-rollback.md](07-rollback.md).

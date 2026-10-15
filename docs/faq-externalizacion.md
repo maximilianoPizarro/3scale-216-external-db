@@ -20,7 +20,7 @@ El operador 3scale **deja de reconciliar** el Deployment y el PVC al marcar `spe
 | Persistencia | PVC + StorageClass + VolumeSnapshot / backups |
 | Logs | stdout/stderr del contenedor → stack de logging del cluster (ClusterLogForwarder, Loki, Elasticsearch, SIEM) |
 | Rotación de logs de motor | No la hace el operador 3scale |
-| Parches de imagen RHSCL | Quien opera las BDD (el operador ya no dispara ImageChange sobre esos Deployments) |
+| Parches de imagen `rhel9/postgresql-15` y `rhel9/redis-7` | Quien opera las BDD (el operador ya no dispara ImageChange sobre esos Deployments) |
 | Conexión desde 3scale | Secrets `system-database`, `system-redis`, `backend-redis` en el namespace de 3scale |
 
 Borrar el `APIManager` no debe borrar los PVC. Los recursos de este paquete no llevan `ownerReferences` del APIManager.
@@ -31,7 +31,7 @@ Preflight de 2.16 (el operador 2.16 comprueba cada ~10 minutos):
 
 - PostgreSQL ≥ 15.0 (system)
 - Redis ≥ 7.2 (dos instancias: system y backend)
-- Matriz: PostgreSQL 14/15, Redis 7.2; Valkey 7.2/8.0 es alternativa documentada
+- Este repo fija PostgreSQL 15 porque el preflight exige ≥ 15.0. Redis 7.2. Valkey 7.2/8.0 es alternativa documentada por el producto, no por este procedimiento.
 
 Imágenes usadas en la guía oficial y en este repo:
 

@@ -11,6 +11,14 @@ A lab cutover typically takes **a few hours** once the cluster and RWX storage a
 !!! note "Lab-validated package"
     Versions and storage defaults reflect a **lab migration** — see [Tested versions](tested-versions.md). Reconfirm [Supported Configurations](https://access.redhat.com/articles/2798521) and adapt placeholders (`REPLACE_*`) and StorageClasses to your cluster before you apply manifests.
 
+This repository uses the Validated Patterns Operator. It is not a Red Hat support statement. The tested environment is AWS: OpenShift 4.19 for the 2.15 to 2.16 migration, and OpenShift 4.21 with one node for a direct 2.16 install.
+
+## What this lab is
+
+One replica of PostgreSQL and of each Redis. There is no high availability. A node drain or an image rollout is an outage. RPO is the last dump. RTO is the time to restore that dump. A later step can move PostgreSQL to an HA operator and Redis to a managed service. This repository does not implement that step.
+
+The lab PostgreSQL dump was 719027 bytes. That size is not a production estimate.
+
 ## What you get
 
 | Area | Location in the repo |

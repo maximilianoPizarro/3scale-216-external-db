@@ -81,7 +81,11 @@ threescale:
   redis:
     auth:
       enabled: false
+    # restore drops durability. The external-db chart renders it only when allowRestore is true.
+    allowRestore: false
     configMode: restore
+  backup:
+    enabled: false
   externalComponents:
     system:
       database: false

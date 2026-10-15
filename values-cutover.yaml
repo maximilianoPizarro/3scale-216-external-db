@@ -17,6 +17,8 @@ threescale:
   redis:
     auth:
       enabled: false
+    # allowRestore is required. The chart refuses configMode restore without it.
+    allowRestore: true
     configMode: restore
   externalComponents:
     system:

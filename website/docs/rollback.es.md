@@ -1,16 +1,16 @@
 # Rollback
 
-Usar esta página cuando el cutover falla **antes** de borrar Deployments y PVC embebidos, o cuando el upgrade del operador 3scale 2.16 entra en bucle de preflight. Copia para clonar el repo: `docs/runbooks/07-rollback.md` (inglés: `docs/runbooks/en/07-rollback.md`).
+Usar esta página cuando el cutover falla **antes** de que `system-app-pre` termine bien en 2.16. Hasta ese momento los Deployments embebidos quedan en 0 réplicas y sus PVC se conservan. Copia para clonar el repo: `docs/runbooks/07-rollback.md` (inglés: `docs/runbooks/en/07-rollback.md`).
 
-Si los recursos embebidos ya no existen, el rollback implica **restaurar desde backup** (snapshot de PVC, `pg_dump`, `dump.rdb`), no volver `externalComponents` a pods embebidos que ya no están.
+Después de que `system-app-pre` termina bien, las escrituras nuevas existen solo en la base externa. Volver a escalar las bases embebidas pierde esas escrituras. El rollback es un restore del dump fresco tomado justo antes de `/values-216-external.yaml`. No hay downgrade de OLM.
 
 ![Rutas de ownership y rollback](images/ownership-and-rollback.png)
 
 ## Quién opera qué
 
-| Namespace | Gestiona el operador | Gestionás vos |
+| Namespace | Gestiona el operador | Gestiona quien opera la plataforma |
 |-----------|----------------------|---------------|
-| `3scale` | `system-app`, APIcast, Zync, `zync-database`, `system-storage` | Secrets de conexión (`system-database`, `system-redis`, `backend-redis`) |
+| `3scale` | `system-app`, APIcast, Zync, `zync-database`, `system-storage` | Secrets de conexión, escritos por ExternalSecret desde Vault |
 | `3scale-db` | Nada del operador 3scale tras `externalComponents` | PostgreSQL 15, ambos Redis 7, PVC, imágenes, backups, NetworkPolicy |
 
 Ver [Motivación](why.es.md) para *external ≠ off-cluster* y qué deja de reconciliar el operador.

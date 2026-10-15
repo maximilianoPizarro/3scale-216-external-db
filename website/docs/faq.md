@@ -24,7 +24,7 @@ Pin **SHA-256 digests** from the Red Hat catalog. Do not pin floating tags.
 
 ## Redis restore vs persistence
 
-Run Redis in **restore mode** (`save ""`, `appendonly no`) only during cutover to load `dump.rdb`. Afterwards switch to persistence (`lab-persist` overlay or `redis-config-persist`). Without that step, a restart loses data.
+Run Redis in **restore mode** (`save ""`, `appendonly no`) only during cutover, and only because `values-cutover.yaml` sets `allowRestore: true`. Afterwards switch to `/values-216-external.yaml` (`configMode: persist`). Without that step, a restart loses data.
 
 Day 2 checklist (backups, digests, GitOps path): [Day 2 operations](day-2.md).
 

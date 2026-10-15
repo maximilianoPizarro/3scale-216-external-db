@@ -1,6 +1,5 @@
 # Single-node sandbox: 3scale 2.16 with external PostgreSQL and Redis.
-# Until this branch is merged, targetRevision stays on the feature branch.
-# After merge, set targetRevision to main.
+# targetRevision is main. Do not point this file at a feature branch.
 apiVersion: gitops.hybrid-cloud-patterns.io/v1alpha1
 kind: Pattern
 metadata:
@@ -12,7 +11,7 @@ spec:
     - /values-216-singlenode.yaml
   gitSpec:
     targetRepo: https://github.com/maximilianoPizarro/3scale-216-external-db.git
-    targetRevision: feat/image-digests-vault-eso
+    targetRevision: main
   multiSourceConfig:
     enabled: true
     clusterGroupChartVersion: "0.9.*"

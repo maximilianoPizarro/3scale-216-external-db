@@ -26,6 +26,11 @@ trap cleanup EXIT
 rm -rf "$SITE"
 mkdir -p "$SITE"
 
+# actions/checkout fetches one commit and no tags unless fetch-depth is 0.
+if ! git -C "$ROOT" rev-parse --verify --quiet refs/tags/v1.0.0 >/dev/null; then
+  git -C "$ROOT" fetch --depth=1 origin tag v1.0.0
+fi
+
 git -C "$ROOT" worktree add --detach "$WT" v1.0.0
 
 python - "$WT/website/mkdocs.yml" "$WT/website/docs/index.md" "$WT/website/docs/index.es.md" <<'PY'

@@ -23,7 +23,7 @@ The database **can stay in-cluster**, for example in a dedicated namespace such 
 This repository is **not** an RDS or off-cluster migration guide. It provides:
 
 - **Dump and restore** runbooks (PostgreSQL 10 → 15, Redis 6 → 7)
-- **Kustomize** manifests for self-managed RHSCL images in-cluster
+- **Kustomize** manifests for self-managed `registry.redhat.io/rhel9/postgresql-15` and `registry.redhat.io/rhel9/redis-7` images in-cluster
 - **GitOps** patterns (OpenShift GitOps / Argo CD and RHACM)
 
 ## What this repo does not cover

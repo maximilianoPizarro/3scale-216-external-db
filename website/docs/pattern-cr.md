@@ -6,10 +6,10 @@ Two scenarios. Do not mix their value files.
 
 | Scenario | Cluster | Pattern CR | What it installs |
 |----------|---------|------------|------------------|
-| Single-node 2.16 | One node, no ReadWriteMany storage | [hub-216-singlenode.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/feat/image-digests-vault-eso/examples/pattern-cr/hub-216-singlenode.yaml) | 3scale channel `threescale-2.16`, external PostgreSQL 15 and Redis 7, Vault, External Secrets. `system-storage` uses `gp3-csi`. |
-| Migration 2.15 to 2.16 | OpenShift that offers channel `threescale-2.15` and a ReadWriteMany class | [hub-215.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/feat/image-digests-vault-eso/examples/pattern-cr/hub-215.yaml) | 3scale 2.15 with embedded databases. During the window, point `extraValueFiles` at `/values-cutover.yaml`. After restore and portal checks, point it at `/values-216-external.yaml`. |
+| Single-node 2.16 | One node, no ReadWriteMany storage | [hub-216-singlenode.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/main/examples/pattern-cr/hub-216-singlenode.yaml) | 3scale channel `threescale-2.16`, external PostgreSQL 15 and Redis 7, Vault, External Secrets. `system-storage` uses `gp3-csi`. Recreate that PVC as ReadWriteOnce. |
+| Migration 2.15 to 2.16 | OpenShift that offers channel `threescale-2.15` and a ReadWriteMany class | [hub-215.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/main/examples/pattern-cr/hub-215.yaml) | 3scale 2.15 with embedded databases. During the window, point `extraValueFiles` at `/values-cutover.yaml`. After the fresh dump and the smoke test, point it at `/values-216-external.yaml`. |
 
-`targetRevision` in those files is `feat/image-digests-vault-eso` until that branch is merged. Then set it to `main`.
+`targetRevision` in those files is `main`.
 
 ## What each wave installs
 

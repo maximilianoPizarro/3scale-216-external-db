@@ -14,8 +14,8 @@ Clone-friendly copy: `docs/runbooks/06-day-2.md`. Short reference: `docs/runbook
 - [ ] Pattern `extraValueFiles` is `/values-216-external.yaml` (`threescale.redis.configMode: persist`)
 - [ ] Image digests are pinned (PostgreSQL 15 and Redis 7), not floating tags
 - [ ] PVC size and `resources` match the 2.15 workload (lab values are examples)
-- [ ] Scheduled `pg_dump` + VolumeSnapshot for PostgreSQL
-- [ ] Scheduled Redis `SAVE` / `dump.rdb` / AOF + VolumeSnapshot
+- [ ] `threescale.backup.enabled` is a choice. The chart ships a CronJob for `pg_dump` and `redis-cli SAVE` onto PVC `external-db-backup`, and that CronJob stays off (`enabled: false`)
+- [ ] A VolumeSnapshot of a live database PVC is crash-consistent. EFS CSI does not implement VolumeSnapshot, so `system-storage` uses AWS Backup or a file copy
 - [ ] Secrets `system-database`, `system-redis`, and `backend-redis` are backed up from namespace `3scale` **and** `system-database` from `3scale-db`
 - [ ] You have run a restore drill at least once
 - [ ] ClusterLogForwarder (or equivalent) collects stdout from the three DB pods
@@ -28,7 +28,7 @@ Clone-friendly copy: `docs/runbooks/06-day-2.md`. Short reference: `docs/runbook
 | Area | Owner after `externalComponents` |
 |------|----------------------------------|
 | PostgreSQL and both Redis (pod, PVC, image, probes) | Database operator (`3scale-db` manifests / GitOps) |
-| Secrets that 3scale uses to connect | You, in namespace `3scale` |
+| Secrets that 3scale uses to connect | Vault, through ExternalSecret. Do not hand-edit `system-database`, `system-redis`, or `backend-redis` |
 | `system-app`, APIcast, Sidekiq, Searchd, Zync, `zync-database` | 3scale operator |
 | `system-storage` (RWX) | 3scale operator / APIManager |
 
@@ -52,8 +52,8 @@ oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/sys
 
 | Component | What to copy | PVC |
 |-----------|--------------|-----|
-| PostgreSQL | `pg_dump` (custom format) + VolumeSnapshot | `postgresql-data-external` |
-| Redis backend | `redis-cli SAVE`, then `dump.rdb` / AOF + snapshot | `backend-redis-storage-external` |
+| PostgreSQL | `pg_dump` (custom format) to a volume that is not `postgresql-data-external` | `postgresql-data-external` |
+| Redis backend | `redis-cli SAVE`, then copy `dump.rdb` off the database volume | `backend-redis-storage-external` |
 | Redis system | same | `system-redis-storage-external` |
 
 Keep a copy of the connection secrets. After a restore as user `postgres`, re-apply the PostgreSQL 15 grant ([Grant CREATE on schema `public`](externalize-postgresql.md#grant-create-on-schema-public)).
@@ -63,7 +63,7 @@ Keep a copy of the connection secrets. After a restore as user `postgres`, re-ap
 
 ## Pin and patch image digests
 
-The 3scale operator no longer triggers ImageChange on these Deployments. Pin SHA-256 digests from the [Red Hat catalog](https://catalog.redhat.com/). Stay inside the 2.16 matrix: PostgreSQL 14/15 (system preflight ≥ 15.0), Redis 7.2.
+The 3scale operator no longer triggers ImageChange on these Deployments. Pin SHA-256 digests from the [Red Hat catalog](https://catalog.redhat.com/). This repo pins PostgreSQL 15 because the operator preflight requires ≥ 15.0, and Redis 7.2. Images are `registry.redhat.io/rhel9/postgresql-15` and `registry.redhat.io/rhel9/redis-7`.
 
 Set `threescale.images.postgresql` and `threescale.images.redis` in `values-global.yaml` to `registry.redhat.io/...@sha256:<digest>`. Procedure: [Pin image digests](image-digests.md).
 
@@ -76,7 +76,7 @@ oc -n 3scale-db rollout status deployment/backend-redis-external
 oc -n 3scale-db rollout status deployment/system-redis-external
 ```
 
-A CVE in RHSCL is **your** rollout. It is an outage for that database.
+A CVE in those images is a rollout you schedule. It is an outage for that database. `maxmemory` and the Redis eviction policy are an operator decision. This repo does not set a value.
 
 ## Capacity
 
@@ -86,9 +86,9 @@ Watch PVC fill rate and Redis memory. Redis is in-memory.
 
 ## Network, logs, and secrets
 
-- Allow TCP **5432** and **6379** only from the 3scale namespace.
+- Chart `external-db` applies a NetworkPolicy that allows TCP **5432** and **6379** only from namespaces `3scale` and `3scale-db`.
 - Collect stdout/stderr (`loglevel notice` on Redis). Filter on `app=system-postgresql-external`, `app=backend-redis-external`, `app=system-redis-external`. These manifests do not mount a log volume.
-- Rotate passwords in **both** namespaces: `system-database` in `3scale-db` (pod env) and `URL` / Redis URLs in `3scale`. Then restart PostgreSQL and `system-app`.
+- Rotate passwords in Vault. ExternalSecret refreshes `system-database` in `3scale-db` and the connection Secrets in `3scale`. Do not hand-edit those Secrets. Then restart PostgreSQL and `system-app`. See [Credential rotation](credential-rotation.md).
 
 ## PostgreSQL 15 grant
 
@@ -99,14 +99,14 @@ Watch PVC fill rate and Redis memory. Redis is in-memory.
 
 ![Ownership and rollback paths](images/ownership-and-rollback.png)
 
-Rollback before you delete embedded resources: [Rollback](rollback.md).
+Rollback before `system-app-pre` succeeds on 2.16: [Rollback](rollback.md). After that job, restore the fresh dump.
 
 ## GitOps pitfalls
 
 | Risk | What to do |
 |------|------------|
 | Pattern still on `values-cutover.yaml` | Switch `extraValueFiles` to `/values-216-external.yaml` after cutover. |
-| `prune: true` | Keep `prune: false` so a sync cannot delete PVCs. |
+| `prune: true` | Keep global `prune: false`. The external database PVCs also carry `argocd.argoproj.io/sync-options: Prune=false`. Annotate PVC `system-storage` the same way after the operator creates it. |
 | Mixing in-cluster GitOps and RHACM | Use one controller per destination. See [GitOps and RHACM](gitops.md). |
 
 ## Upgrade windows

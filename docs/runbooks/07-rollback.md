@@ -1,6 +1,6 @@
 # Rollback
 
-Usar este runbook cuando el cutover falla **antes** de borrar Deployments y PVC embebidos, o cuando el upgrade del operador 3scale 2.16 entra en bucle de preflight. Copia para clonar el repo: este archivo (inglés: [en/07-rollback.md](en/07-rollback.md)).
+Usar este runbook cuando el cutover falla **antes** de que `system-app-pre` termine bien en 2.16. Hasta entonces los Deployments embebidos quedan en 0 y sus PVC se conservan. Después, el rollback es un restore del dump fresco. No hay downgrade de OLM.
 
 Si los recursos embebidos ya no existen, el rollback implica **restaurar desde backup** (snapshot de PVC, `pg_dump`, `dump.rdb`), no volver `externalComponents` a pods embebidos que ya no están.
 

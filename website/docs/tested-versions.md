@@ -11,7 +11,7 @@ Product matrix: [Supported Configurations](https://access.redhat.com/articles/27
 
 | Layer | Tested value |
 |-------|--------------|
-| **OpenShift** | 4.19 on **AWS, self-managed** (IPI; not ROSA-managed databases) |
+| **OpenShift** | 4.19 on **AWS** for the migration. 4.21 single-node for a direct 2.16 install. |
 | **3scale source** | 2.15.5 — CSV `0.12.5`, channel `threescale-2.15` |
 | **3scale target** | 2.16.4 — CSV `0.13.4`, channel `threescale-2.16` |
 | **PostgreSQL** | 15 — `registry.redhat.io/rhel9/postgresql-15` |
@@ -27,7 +27,9 @@ A single-node OpenShift 4.21 install that uses `values-216-singlenode.yaml` is a
 | External PostgreSQL / Redis PVCs | `gp3-csi` | ReadWriteOnce |
 | `system-storage` (3scale file storage) | `efs-sc` (EFS CSI driver) | ReadWriteMany |
 
-On AWS lab clusters where default block storage is RWO only, you need **EFS CSI** for the `system-storage` PVC. See [Install 3scale 2.15 (lab)](install-lab.md).
+On AWS lab clusters the ReadWriteMany path is **EFS CSI** and class `efs-sc`. Without EFS, Local Storage Operator can publish a class with the same name. The local PV is ReadWriteOnce, so recreate `system-storage` as ReadWriteOnce. See [Install 3scale 2.15 (lab)](install-lab.md). Do not run EFS and that LocalVolume at the same time.
+
+This repo pins PostgreSQL 15. The operator preflight requires ≥ 15.0, so PostgreSQL 14 is outside this procedure even when the product matrix lists it.
 
 ## Supported matrix (reference)
 

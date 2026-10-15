@@ -11,7 +11,7 @@ OpenShift GitOps aplica este repositorio a través del Validated Patterns Operat
 
 La Subscription de 3scale sale de `clusterGroup.subscriptions`. El sync se mira con `oc get applications -n vp-gitops`.
 
-`targetRevision` tiene que ser la rama que contiene los charts. Hasta que se fusione `feat/image-digests-vault-eso`, esa es la revisión de `examples/pattern-cr/`.
+`targetRevision` en `examples/pattern-cr/` es `main`.
 
 ## Orden de values en una migración 2.15
 

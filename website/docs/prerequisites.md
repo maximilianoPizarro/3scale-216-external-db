@@ -20,12 +20,12 @@ This lab was tested on OpenShift 4.19. See [Tested versions](tested-versions.md)
 
 - `oc` logged in to the target cluster
 - Validated Patterns Operator (`patterns-operator`, channel `fast`) so the [Pattern CR](pattern-cr.md) can install GitOps, Vault, and External Secrets
-- Pull access to `registry.redhat.io` for RHSCL images
+- Pull access to `registry.redhat.io` for `registry.redhat.io/rhel9/postgresql-15` and `registry.redhat.io/rhel9/redis-7`
 - Linux bash for dump/restore (Git Bash on Windows: runbooks `01-bis` / `02-bis` in `docs/runbooks/`)
 
 ## Storage
 
-- **ReadWriteMany** StorageClass for `system-storage` (EFS CSI / `efs-sc` on the AWS lab)
+- **ReadWriteMany** StorageClass for `system-storage` (EFS CSI class `efs-sc` on the AWS lab). Without EFS, the lab fallback is Local Storage Operator and a ReadWriteOnce recreate. See [Install 3scale 2.15 (lab)](install-lab.md).
 - **ReadWriteOnce** StorageClass for in-cluster PostgreSQL and Redis PVCs (`gp3-csi` on the AWS lab)
 
 ## Backup before the maintenance window

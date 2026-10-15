@@ -4,22 +4,29 @@ Prerequisite: system PostgreSQL ≥ 15.0 and Redis ≥ 7.2 **already externalize
 
 ## Preflight
 
-On self-managed database pods:
+Server version, before the channel switch. `psql --version` is the client.
 
 ```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- psql --version
+oc exec -n 3scale-db deploy/system-postgresql-external -- \
+  psql -U postgres -d system -c 'SELECT version();'
 oc exec -n 3scale-db deploy/backend-redis-external -- redis-server --version
 oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 ```
 
-## OLM channel
+Take a fresh `pg_dump` and both `dump.rdb` files immediately before the patch. This repo pins PostgreSQL 15 because preflight requires ≥ 15.0.
 
-Set the Pattern `extraValueFiles` to `/values-216-external.yaml`. That file sets channel `threescale-2.16`. Approve InstallPlans if approval is manual.
+## Channel
+
+Channel `threescale-2.16` comes from `values-216-external.yaml`. The patch changes `extraValueFiles`. Do not edit the Subscription by hand. Argo overwrites that edit. The same file sets `externalComponents`, Redis auth, and `configMode: persist`.
 
 ```bash
 oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
   -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
 ```
+
+If the operator is at 0 replicas, scale the Deployment that exists in `3scale`. On 0.12 and 0.13 it is `threescale-operator-controller-manager-v2`.
+
+Once `system-app-pre` succeeds, rollback is the fresh dump. There is no OLM downgrade.
 
 Wait for pods Ready. Expected APIManager annotations:
 

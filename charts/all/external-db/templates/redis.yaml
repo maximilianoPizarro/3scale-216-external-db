@@ -1,4 +1,7 @@
 {{- if .Values.threescale.externalDb.enabled }}
+{{- if and (eq .Values.threescale.redis.configMode "restore") (not .Values.threescale.redis.allowRestore) }}
+{{- fail "redis configMode restore requires threescale.redis.allowRestore: true, set only in values-cutover.yaml" }}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -46,6 +49,8 @@ metadata:
   namespace: 3scale-db
   labels:
     app: {{ $i.name }}
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   accessModes:
     - ReadWriteOnce

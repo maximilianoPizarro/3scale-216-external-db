@@ -1,42 +1,57 @@
 # Upgrade operator to 2.16
 
-!!! warning "Preflight requirement"
-    Externalize system PostgreSQL ≥ 15.0 and Redis ≥ 7.2 first (`externalComponents` set).
-    If versions do not meet this, the 3scale operator 2.16 installs but the instance upgrade does not complete.
+The channel `threescale-2.16` comes from `values-216-external.yaml`. The command below changes Pattern `extraValueFiles`. It does not edit the Subscription by hand. Argo renders the Subscription from that file and overwrites a manual channel patch.
 
-## Run preflight checks
+Run this page only after both cutover cycles, the 2.15 smoke test, and a **fresh** `pg_dump` plus both `dump.rdb` files. See [Migration sequence](sequence.md).
+
+## Preflight, before the channel switch
+
+Check the **server** version. `psql --version` prints the client and is not the preflight.
 
 ```bash
-oc exec -n 3scale-db deploy/system-postgresql-external -- psql --version
+oc exec -n 3scale-db deploy/system-postgresql-external -- \
+  psql -U postgres -d system -c 'SELECT version();'
 oc exec -n 3scale-db deploy/backend-redis-external -- redis-server --version
 oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 ```
 
-## Switch the OLM channel
+PostgreSQL must be ≥ 15.0. Redis must be ≥ 7.2. This repository pins PostgreSQL 15 because the operator preflight rejects anything older.
 
-Change the 3scale operator Subscription to channel `threescale-2.16`. Approve InstallPlans if approval is manual.
+## Switch the channel
 
 ```bash
 oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
   -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
 ```
 
-Wait for pods to be ready. Expected APIManager annotations:
+That file also sets `externalComponents`, Redis auth, and `configMode: persist`. ExternalSecret rewrites the connection Secrets. Do not patch those Secrets or the APIManager yourself.
+
+If the operator Deployment is at 0 replicas, scale the Deployment that exists in namespace `3scale` back to 1. On CSV 0.12 and 0.13 the name is `threescale-operator-controller-manager-v2`. The name can change:
+
+```bash
+oc get deploy -n 3scale -o name
+oc scale deployment threescale-operator-controller-manager-v2 -n 3scale --replicas=1
+```
+
+Wait until CSV `3scale-operator.v0.13.x` is `Succeeded`. Expected APIManager annotations:
 
 ```text
 apps.3scale.net/apimanager-threescale-version: "2.16"
 apps.3scale.net/threescale-operator-version: "0.13.x"
 ```
 
-APIcast operator-based deployments, if applicable, have their own 2.16 channel (migration guide chapter 2).
+`system-app-pre` runs 2.16 migrations against the external database. From the moment that job succeeds, writes live on the external database. Scaling the embedded databases back up loses those writes. Rollback is a restore of the fresh dump. There is no OLM downgrade.
+
+If `system-app-pre` fails with `ECONNREFUSED` to `backend-listener:3000`, the job started before the listener was ready. Delete the Job and annotate the APIManager so the operator recreates it:
+
+```bash
+oc annotate apimanager apimanager -n 3scale apps.3scale.net/reconcile-now="$(date +%s)" --overwrite
+```
 
 ## If `system-app-pre` fails: `permission denied for schema public`
 
-PostgreSQL 15 revokes `CREATE` on schema `public` except for the schema owner. After a restore done as `postgres`, user `system` cannot run migrations.
-
-!!! warning "PostgreSQL 15 grant required"
-    Run the full `GRANT USAGE, CREATE ON SCHEMA public` command during externalization — [Grant CREATE on schema `public`](externalize-postgresql.md#grant-create-on-schema-public). Delete the `system-app-pre` Job and let the 3scale operator recreate it.
+PostgreSQL 15 revokes `CREATE` on schema `public` except for the owner. `ALTER SCHEMA public OWNER TO system` is the step that lets migrations run. `GRANT CREATE` alone is the smaller privilege and is not a substitute. See [Externalize PostgreSQL](externalize-postgresql.md).
 
 ## If version preflight fails
 
-Upgrade PostgreSQL and Redis to the minimum versions. Let the 3scale operator 2.16 retry (approximately every 10 minutes) or rescale the operator controller.
+Fix PostgreSQL or Redis before retrying. The 2.16 operator checks about every 10 minutes. Do not patch `OperatorCondition` by hand.

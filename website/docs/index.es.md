@@ -11,6 +11,14 @@ Un corte de laboratorio suele llevar **unas pocas horas** cuando el cluster y el
 !!! note "Paquete validado en laboratorio"
     Las versiones y los valores por defecto de almacenamiento reflejan una **migración de lab** — ver [Versiones probadas](tested-versions.es.md). Reconfirmar [Supported Configurations](https://access.redhat.com/articles/2798521) y adaptar placeholders (`REPLACE_*`) y StorageClasses al cluster antes de aplicar manifiestos.
 
+Este repositorio usa el Validated Patterns Operator. No es una declaración de soporte de Red Hat. El entorno probado es AWS: OpenShift 4.19 para la migración 2.15 a 2.16, y OpenShift 4.21 de un nodo para una instalación directa de 2.16.
+
+## Qué es este laboratorio
+
+Una réplica de PostgreSQL y de cada Redis. No hay alta disponibilidad. Un drain de nodo o un rollout de imagen es un corte. El RPO es el último dump. El RTO es el tiempo de restaurar ese dump. Un paso posterior puede pasar PostgreSQL a un operador con HA y Redis a un servicio gestionado. Este repositorio no implementa ese paso.
+
+El dump de PostgreSQL del laboratorio fue de 719027 bytes. Ese tamaño no es una estimación de producción.
+
 ## Qué incluye
 
 | Área | Ubicación en el repo |

@@ -20,12 +20,12 @@ Este laboratorio se probó en OpenShift 4.19. Ver [Versiones probadas](tested-ve
 
 - `oc` autenticado contra el cluster destino
 - Validated Patterns Operator (`patterns-operator`, canal `fast`) para que el [Pattern CR](pattern-cr.es.md) instale GitOps, Vault y External Secrets
-- Pull a `registry.redhat.io` para las imágenes RHSCL
+- Pull a `registry.redhat.io` para `registry.redhat.io/rhel9/postgresql-15` y `registry.redhat.io/rhel9/redis-7`
 - Bash en Linux para dump/restore (Git Bash en Windows: runbooks `01-bis` / `02-bis` en `docs/runbooks/`)
 
 ## Almacenamiento
 
-- StorageClass **ReadWriteMany** para `system-storage` (EFS CSI / `efs-sc` en el lab AWS)
+- StorageClass **ReadWriteMany** para `system-storage` (clase EFS CSI `efs-sc` en el lab AWS). Sin EFS, la alternativa de laboratorio es Local Storage Operator y un recreado ReadWriteOnce. Ver [Instalar 3scale 2.15 (lab)](install-lab.es.md).
 - StorageClass **ReadWriteOnce** para los PVC in-cluster de PostgreSQL y Redis (`gp3-csi` en el lab AWS)
 
 ## Backup antes de la ventana de mantenimiento

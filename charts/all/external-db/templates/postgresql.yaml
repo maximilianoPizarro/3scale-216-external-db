@@ -30,6 +30,8 @@ metadata:
   namespace: 3scale-db
   labels:
     app: system-postgresql-external
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   accessModes:
     - ReadWriteOnce

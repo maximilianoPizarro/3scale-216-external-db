@@ -1,0 +1,31 @@
+{{- if .Values.threescale.externalDb.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: external-db
+  namespace: 3scale-db
+spec:
+  podSelector:
+    matchExpressions:
+      - key: app
+        operator: In
+        values:
+          - system-postgresql-external
+          - backend-redis-external
+          - system-redis-external
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: 3scale
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: 3scale-db
+      ports:
+        - protocol: TCP
+          port: 5432
+        - protocol: TCP
+          port: 6379
+{{- end }}

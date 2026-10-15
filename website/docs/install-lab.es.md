@@ -2,7 +2,7 @@
 
 Instalar el **operador 3scale 2.15** y un APIManager con PostgreSQL y Redis **embebidos** antes de externalizar. La instalación es el [Pattern CR](pattern-cr.es.md). `values-215.yaml` deja `threescale.externalDb.enabled` en false.
 
-Completar primero [Requisitos previos](prerequisites.es.md). Parar si OperatorHub no tiene el canal `threescale-2.15` o el cluster no tiene una StorageClass ReadWriteMany. No sustituir esta página por el Pattern de 2.16 en un solo nodo.
+Completar primero [Requisitos previos](prerequisites.es.md). Parar si OperatorHub no tiene el canal `threescale-2.15`. No sustituir esta página por el Pattern de 2.16 en un solo nodo.
 
 ## 1. Instalar con el Pattern CR
 
@@ -13,29 +13,29 @@ oc get applications -n vp-gitops
 oc -n 3scale get csv,subscription,pods
 ```
 
-Esperar CSV `Succeeded` y el pod `threescale-operator-controller-manager-v2`. La Subscription sale de `clusterGroup.subscriptions` en `values-hub.yaml`, con canal `threescale-2.15` por `values-215.yaml`.
+Esperar CSV `Succeeded` y el pod del operador. En el CSV 0.12 el Deployment es `threescale-operator-controller-manager-v2`. La Subscription sale de `clusterGroup.subscriptions` en `values-hub.yaml`, con canal `threescale-2.15` por `values-215.yaml`.
 
-## 2. Proveer volumen RWX para `system-storage`
+## 2. ReadWriteMany para `system-storage`
 
-3scale exige **ReadWriteMany** para el PVC `system-storage`. En AWS, `gp3-csi` es RWO. El PVC queda Pending (`Volume capabilities not supported`).
+El operador 3scale crea el PVC `system-storage` como **ReadWriteMany**. El chart solo fija `storageClassName`. El access mode es inmutable.
 
-En laboratorio AWS: crear un filesystem EFS en la VPC del cluster (mount targets + TCP 2049 desde el SG de nodos) y una StorageClass llamada `efs-sc`. `values-215.yaml` pone `threescale.storage.systemStorageClass` en ese nombre. El chart del APIManager lo lee. El dominio de apps lo inyecta el operador en `global.localClusterDomain`. No guardar el hostname del sandbox en git.
+`values-215.yaml`, `values-cutover.yaml` y `values-216-external.yaml` ponen `threescale.storage.systemStorageClass` en `efs-sc`. En AWS, crear un filesystem EFS en la VPC del cluster (mount targets y TCP 2049 desde el security group de los nodos) y una StorageClass llamada `efs-sc`. El dominio de apps lo inyecta el operador en `global.localClusterDomain`. No guardar el hostname del sandbox ni el id del filesystem en git.
 
 ```bash
 oc get sc efs-sc
 oc -n 3scale get apimanager,pods,pvc
 ```
 
-Si `system-storage` nació Pending contra `gp3-csi` (APIManager aplicado antes de la SC RWX):
+### Alternativa de laboratorio: Local Storage Operator
 
-```bash
-oc -n 3scale patch apimanager apimanager --type merge \
-  -p '{"spec":{"system":{"fileStorage":{"persistentVolumeClaim":{"storageClassName":"efs-sc"}}}}}'
-oc -n 3scale delete pvc system-storage
-```
+Cuando el cluster no tiene EFS, instalar Local Storage Operator (`redhat-operators`, canal `stable`, modo `OwnNamespace`, namespace `openshift-local-storage`) y aplicar `examples/local-storage/localvolume.yaml`. Reemplazar `NODE_NAME` y la ruta del disco. El ejemplo crea una StorageClass también llamada `efs-sc`, así los values no cambian.
 
-Cuando el APIManager esté healthy, seguir con [Externalizar PostgreSQL](externalize-postgresql.es.md) y [Externalizar Redis](externalize-redis.es.md).
+No instalar el CSI de EFS y este LocalVolume con el mismo nombre de clase al mismo tiempo.
 
-## 4. Cambiar el canal del operador a 2.16 (solo después de externalizar)
+El PV local es `ReadWriteOnce` y fija los pods a ese nodo. No es una solución de varios nodos. El operador igual pide `ReadWriteMany`, así que el PVC queda Pending. Recrearlo como `ReadWriteOnce` con las mismas labels y el mismo `ownerReference` del objeto que creó el operador. Varios pods en ese único nodo pueden montar el volumen RWO.
 
-Cambiar `spec.extraValueFiles` del Pattern de `/values-cutover.yaml` a `/values-216-external.yaml`. Ese archivo pone el canal `threescale-2.16`, `externalComponents`, auth de Redis y `threescale.redis.configMode: persist`. Dejar `systemStorageClass` en la clase ReadWriteMany.
+En el escenario de un nodo en 4.21 el mismo recreado aplica a `gp3-csi`: borrar el PVC RWX Pending y crearlo de nuevo como `ReadWriteOnce`, tamaño `100Mi`, clase `gp3-csi`, con el `ownerReference` del APIManager.
+
+## 3. Cambiar el archivo de values solo después de externalizar
+
+Cambiar `spec.extraValueFiles` de `/values-cutover.yaml` a `/values-216-external.yaml` después del dump fresco y del smoke test en 2.15. Ese archivo pone el canal `threescale-2.16`. Dejar `systemStorageClass` en `efs-sc` para el escenario de migración.

@@ -23,7 +23,7 @@ La base **puede seguir in-cluster**, por ejemplo en un namespace dedicado como `
 Este repositorio **no** es una guía de migración a RDS u off-cluster. Ofrece:
 
 - **Runbooks** de dump/restore (PostgreSQL 10 → 15, Redis 6 → 7)
-- Manifiestos **Kustomize** para imágenes RHSCL self-managed in-cluster
+- Manifiestos **Kustomize** para imágenes self-managed `registry.redhat.io/rhel9/postgresql-15` y `registry.redhat.io/rhel9/redis-7` in-cluster
 - Patrones **GitOps** (OpenShift GitOps / Argo CD y RHACM)
 
 ## Qué no cubre este repo

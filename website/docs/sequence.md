@@ -19,7 +19,7 @@ Complete [Prerequisites](prerequisites.md) before step 1.
     oc get deploy -n 3scale -o json > "$HOME/3scale-replicas-before-cutover.json"
     ```
 
-5. **Cycle 1, PostgreSQL.** Scale the operator and 3scale components to 0 except `system-postgresql`. Dump, restore into PostgreSQL 15, `ANALYZE`, compare table counts, scale the application back. Leave the embedded PostgreSQL Deployment at 0 and **keep** its PVC. [Externalize PostgreSQL](externalize-postgresql.md).
+5. **Cycle 1, PostgreSQL.** Scale the operator and 3scale components to 0 except `system-postgresql`. Dump, restore into PostgreSQL 15, `ANALYZE`, compare table counts, scale the application back. The operator does not raise `system-app` or `system-sidekiq` from 0; use the JSON. Leave the embedded PostgreSQL Deployment at 0 and **keep** its PVC. [Externalize PostgreSQL](externalize-postgresql.md).
 6. **Cycle 2, Redis.** Scale down again, except the embedded Redis you are dumping. `SAVE`, compare `LASTSAVE` and `DBSIZE`, copy `dump.rdb`, load it into Redis 7, scale back. Leave embedded Redis at 0 and **keep** those PVCs. [Externalize Redis](externalize-redis.md).
 7. **Smoke test on 2.15** against the external databases: admin login, create and read one account, one APIcast call, Sidekiq queues not stuck.
 8. **Fresh dump** of PostgreSQL and both Redis instances immediately before the channel switch. This is a second backup, not a replacement for the one that opened the window.

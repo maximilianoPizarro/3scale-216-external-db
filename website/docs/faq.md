@@ -28,6 +28,18 @@ Run Redis in **restore mode** (`save ""`, `appendonly no`) only during cutover, 
 
 Day 2 checklist (backups, digests, GitOps path): [Day 2 operations](day-2.md).
 
+## The product looks down after the scale-down
+
+The operator does not raise `system-app` or `system-sidekiq` from 0. Scale both from `$HOME/3scale-replicas-before-cutover.json`. CSV Succeeded and passing preflights do not start those pods. If `system-app-pre` fails with `ECONNREFUSED` to `backend-listener:3000`, scale `backend-listener` to 1 first. Full commands: [Upgrade operator to 2.16](upgrade-216.md).
+
+## The developer portal says Access Restricted
+
+That page, with a form posting to `/access_code`, is the portal access code. The route is serving.
+
+## Search reindex pods are Error
+
+`system-searchd-manticore-reindex` pods that failed before `system-app` was up can be deleted once a later reindex Job is Complete.
+
 ## Can I test on OpenShift 4.19 if production is on an earlier minor?
 
 Yes. Use 4.19 to validate 2.16 with self-managed databases. On the cluster you will migrate, confirm the current OCP version is in the matrix for **both 2.15 and 2.16**. Sequence: latest 2.15 micro → externalize PostgreSQL and Redis **on 2.15** → 3scale operator 2.16 → OpenShift upgrade later.

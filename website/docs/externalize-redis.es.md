@@ -59,7 +59,7 @@ Cuando los pods estén Ready, comparar `DBSIZE` con los números del paso 2. Des
 
 ## 4. Volver a escalar, smoke test y dump fresco
 
-Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`, salvo `system-postgresql`, `backend-redis` y `system-redis` embebidos, que quedan en 0. Conservar esos PVC.
+Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`, salvo `system-postgresql`, `backend-redis` y `system-redis` embebidos, que quedan en 0. Conservar esos PVC. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON.
 
 En el canal `threescale-2.15`, contra las bases externas:
 

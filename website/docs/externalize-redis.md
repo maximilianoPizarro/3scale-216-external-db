@@ -59,7 +59,7 @@ When the pods are Ready, compare `DBSIZE` with the numbers from step 2. Then `BG
 
 ## 4. Scale back, smoke test, then take a fresh dump
 
-Restore replica counts from `$HOME/3scale-replicas-before-cutover.json`, except embedded `system-postgresql`, `backend-redis`, and `system-redis`, which stay at 0. Keep those PVCs.
+Restore replica counts from `$HOME/3scale-replicas-before-cutover.json`, except embedded `system-postgresql`, `backend-redis`, and `system-redis`, which stay at 0. Keep those PVCs. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON.
 
 On channel `threescale-2.15`, with the external databases:
 

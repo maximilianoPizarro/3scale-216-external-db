@@ -21,7 +21,7 @@ Completar [Requisitos previos](prerequisites.es.md) antes del paso 1.
     oc get deploy -n 3scale -o json > "$HOME/3scale-replicas-before-cutover.json"
     ```
 
-5. **Ciclo 1, PostgreSQL.** Escalar a 0 el operador y los componentes, salvo `system-postgresql`. Dump, restore en PostgreSQL 15, `ANALYZE`, comparar conteos, volver a escalar la aplicación. Dejar el Deployment embebido en 0 y **conservar** su PVC. [Externalizar PostgreSQL](externalize-postgresql.es.md).
+5. **Ciclo 1, PostgreSQL.** Escalar a 0 el operador y los componentes, salvo `system-postgresql`. Dump, restore en PostgreSQL 15, `ANALYZE`, comparar conteos, volver a escalar la aplicación. El operador no sube `system-app` ni `system-sidekiq` desde 0; usar el JSON. Dejar el Deployment embebido en 0 y **conservar** su PVC. [Externalizar PostgreSQL](externalize-postgresql.es.md).
 6. **Ciclo 2, Redis.** Volver a escalar a 0, salvo el Redis embebido que se está volcando. `SAVE`, comparar `LASTSAVE` y `DBSIZE`, copiar `dump.rdb`, cargarlo en Redis 7, volver a escalar. Dejar el Redis embebido en 0 y **conservar** esos PVC. [Externalizar Redis](externalize-redis.es.md).
 7. **Smoke test en 2.15** contra las bases externas: login de admin, alta y lectura de una cuenta, una llamada por APIcast, colas de Sidekiq sin atasco.
 8. **Dump fresco** de PostgreSQL y de ambos Redis inmediatamente antes del cambio de canal. Es un segundo backup, además del que abrió la ventana.

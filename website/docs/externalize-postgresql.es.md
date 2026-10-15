@@ -84,7 +84,7 @@ Quedarse en `/values-cutover.yaml` hasta terminar el ciclo de Redis. Los Secrets
 
 ## 6. Volver a escalar la aplicación
 
-Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`. Volver a escalar el Redis embebido a su conteo anterior para poder volcarlo en el ciclo de Redis.
+Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador 3scale no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Volver a escalar el Redis embebido a su conteo anterior para poder volcarlo en el ciclo de Redis.
 
 Escalar `system-postgresql` embebido a 0. **Conservar** su Deployment, Service y PVC hasta aceptar el upgrade a 2.16. Borrarlos elimina el camino de rollback.
 

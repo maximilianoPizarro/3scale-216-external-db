@@ -66,7 +66,7 @@ Comparar `n_live_tup` con la base embebida. `ANALYZE` va primero.
 
 ## 5. Volver a escalar
 
-Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. Volver a subir Redis embebido para el ciclo siguiente. Escalar `system-postgresql` embebido a 0 y **conservar** Deployment, Service y PVC hasta aceptar 2.16.
+Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Volver a subir Redis embebido para el ciclo siguiente. Escalar `system-postgresql` embebido a 0 y **conservar** Deployment, Service y PVC hasta aceptar 2.16.
 
 El smoke test es después del ciclo de Redis, todavía en `threescale-2.15`.
 

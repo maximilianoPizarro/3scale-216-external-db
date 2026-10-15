@@ -6,7 +6,7 @@
 2. Confirm the matrix: OpenShift supported by 2.15 and 2.16; latest CSV on `threescale-2.15`.
 3. Back up PVCs and secrets. A VolumeSnapshot of a live database is crash-consistent. EFS CSI does not implement VolumeSnapshot.
 4. Capture replicas outside the repo: `oc get deploy -n 3scale -o json > "$HOME/3scale-replicas-before-cutover.json"`.
-5. PostgreSQL cycle: scale down, dump, restore, `ANALYZE`, scale up. Leave embedded PostgreSQL at 0 and keep the PVC ([01-externalize-postgresql.md](01-externalize-postgresql.md)).
+5. PostgreSQL cycle: scale down, dump, restore, `ANALYZE`, scale up. The operator does not raise `system-app` or `system-sidekiq` from 0. Leave embedded PostgreSQL at 0 and keep the PVC ([01-externalize-postgresql.md](01-externalize-postgresql.md)).
 6. Redis cycle: another scale down, `SAVE`, `DBSIZE`, RDB, scale up. Keep the embedded PVCs ([02-externalize-redis.md](02-externalize-redis.md)).
 7. Smoke test on 2.15 against the external databases.
 8. Fresh dump of PostgreSQL and both Redis instances.

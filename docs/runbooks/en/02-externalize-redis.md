@@ -49,7 +49,7 @@ Compare `DBSIZE` with step 2. Then `BGREWRITEAOF` and wait for `aof_rewrite_in_p
 
 ## 4. Smoke test and a fresh dump
 
-Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. Leave embedded PostgreSQL and Redis at 0 and keep their PVCs.
+Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Leave embedded PostgreSQL and Redis at 0 and keep their PVCs.
 
 On 2.15: admin login, create and read an account, one APIcast call, Sidekiq not stuck.
 

@@ -82,6 +82,12 @@ oc get pods -n vault
 
 On the 2.16 scenario, the database Deployments must show the `@sha256:` images from `values-global.yaml`, and the ExternalSecrets must be `SecretSynced`.
 
+A child Application in `ComparisonError` that dials a stale repo-server IP clears after a hard refresh. The current repo-server must be Ready:
+
+```bash
+oc annotate application -n 3scale-216-external-db-hub --all argocd.argoproj.io/refresh=hard --overwrite
+```
+
 ```bash
 oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
 oc get externalsecret -A

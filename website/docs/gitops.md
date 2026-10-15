@@ -9,7 +9,7 @@ OpenShift GitOps applies this repository through the Validated Patterns Operator
 | 5 | `external-db` |
 | 7 | `threescale-apimanager` |
 
-The 3scale Subscription is rendered from `clusterGroup.subscriptions`. Watch sync with `oc get applications -n vp-gitops`.
+The 3scale Subscription is rendered from `clusterGroup.subscriptions`. Watch sync with `oc get applications -n vp-gitops`. A child Application in `ComparisonError` that dials a stale repo-server clears with `argocd.argoproj.io/refresh=hard` once the current repo-server is Ready. See [Install with a Pattern CR](pattern-cr.md).
 
 `targetRevision` in `examples/pattern-cr/` is `main`.
 

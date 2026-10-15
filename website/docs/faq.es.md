@@ -8,7 +8,7 @@ No. *External* significa que las bases quedan **fuera del ciclo de vida del oper
 
 ## ¿Quién opera logs y persistencia en disco?
 
-Tras `externalComponents`, operás PostgreSQL y ambos Redis en `3scale-db` (pods, PVC, imágenes, backups, logs). El operador 3scale sigue gestionando `system-app`, APIcast y Zync. Matriz de ownership y checklist de día 2: [Operación día 2](day-2.es.md). Motivación: [Motivación](why.es.md).
+Tras `externalComponents`, quien opera el namespace es dueño de PostgreSQL y de ambos Redis en `3scale-db` (pods, PVC, imágenes, backups, logs). El operador 3scale sigue gestionando `system-app`, APIcast y Zync. Matriz de ownership y checklist de día 2: [Operación día 2](day-2.es.md). Motivación: [Motivación](why.es.md).
 
 ## ¿Qué versiones de imagen hay que fijar?
 
@@ -27,6 +27,18 @@ Anclar **digest SHA-256** del catálogo de Red Hat. No anclar el tag flotante.
 Correr Redis en modo restore (`save ""`, `appendonly no`) solo durante el cutover, y solo porque `values-cutover.yaml` pone `allowRestore: true`. Después pasar a `/values-216-external.yaml` (`configMode: persist`). Sin ese paso, un restart pierde datos.
 
 Checklist de día 2 (backups, digest, path de GitOps): [Operación día 2](day-2.es.md).
+
+## El producto se ve caído después del scale-down
+
+El operador no sube `system-app` ni `system-sidekiq` desde 0. Escalar los dos desde `$HOME/3scale-replicas-before-cutover.json`. Un CSV Succeeded y preflights en True no arrancan esos pods. Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, escalar antes `backend-listener` a 1. Comandos: [Actualizar operador a 2.16](upgrade-216.es.md).
+
+## El portal de desarrollador dice Access Restricted
+
+Esa página, con un formulario que postea a `/access_code`, es el access code del portal. La ruta está sirviendo.
+
+## Los pods de reindex de búsqueda están en Error
+
+Los pods `system-searchd-manticore-reindex` que fallaron antes de que `system-app` estuviera arriba se pueden borrar cuando un Job de reindex posterior queda Complete.
 
 ## ¿Se puede probar en OpenShift 4.19 si producción está en un minor menor?
 

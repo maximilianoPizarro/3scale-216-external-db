@@ -26,7 +26,9 @@ oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
 
 Si el operador está en 0 réplicas, escalar el Deployment que exista en `3scale`. En 0.12 y 0.13 es `threescale-operator-controller-manager-v2`.
 
-Desde que `system-app-pre` termina bien, el rollback es el dump fresco. No hay downgrade de OLM.
+Desde que `system-app-pre` termina bien, el rollback es el dump fresco. No hay downgrade de OLM. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde `$HOME/3scale-replicas-before-cutover.json`.
+
+Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, escalar `backend-listener` a 1, esperar Ready, borrar el Job `system-app-pre` y anotar `apps.3scale.net/reconcile-now`. Los pods `system-searchd-manticore-reindex` en Error de antes de que `system-app` estuviera arriba se pueden borrar cuando un Job de reindex posterior queda Complete. El título **Access Restricted** del portal de desarrollador es el access code, no una ruta caída.
 
 Esperar pods listos. Anotaciones esperadas en el APIManager:
 

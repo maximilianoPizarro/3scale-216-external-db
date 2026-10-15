@@ -42,11 +42,18 @@ apps.3scale.net/threescale-operator-version: "0.13.x"
 
 `system-app-pre` corre las migraciones de 2.16 contra la base externa. Desde que ese Job termina bien, las escrituras viven en la base externa. Volver a escalar las bases embebidas pierde esas escrituras. El rollback es un restore del dump fresco. No hay downgrade de OLM.
 
-Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, el Job arrancó antes de que el listener estuviera listo. Borrar el Job y anotar el APIManager para que el operador lo recree:
+Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, el Job arrancó con `backend-listener` todavía en 0 réplicas. Escalar el listener a 1 y esperar a que esté Ready. Después borrar el Job y anotar el APIManager para que el operador lo recree:
 
 ```bash
+oc scale deployment/backend-listener -n 3scale --replicas=1
+oc rollout status deployment/backend-listener -n 3scale
+oc delete job system-app-pre -n 3scale
 oc annotate apimanager apimanager -n 3scale apps.3scale.net/reconcile-now="$(date +%s)" --overwrite
 ```
+
+El operador no sube `system-app` ni `system-sidekiq` desde 0 después del scale-down de mantenimiento. Escalar los dos desde `$HOME/3scale-replicas-before-cutover.json`. El producto sigue caído mientras esos dos estén en 0, aunque el CSV `3scale-operator.v0.13.x` esté Succeeded y los preflights pasen.
+
+Los pods `system-searchd-manticore-reindex` en Error de antes de que `system-app` estuviera arriba se pueden borrar cuando un Job de reindex posterior queda Complete. La página del portal de desarrollador titulada **Access Restricted**, con un formulario que postea a `/access_code`, es el access code del portal. La ruta está arriba.
 
 ## Si `system-app-pre` falla: `permission denied for schema public`
 

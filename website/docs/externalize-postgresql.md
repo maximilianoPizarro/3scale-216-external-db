@@ -84,7 +84,7 @@ Stay on `/values-cutover.yaml` until the Redis cycle finishes. The Secrets in na
 
 ## 6. Scale the application back
 
-Restore replica counts from `$HOME/3scale-replicas-before-cutover.json`. Scale embedded Redis back to its previous count so the Redis cycle can dump it.
+Restore replica counts from `$HOME/3scale-replicas-before-cutover.json`. The 3scale operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Scale embedded Redis back to its previous count so the Redis cycle can dump it.
 
 Scale embedded `system-postgresql` to 0. **Keep** its Deployment, Service, and PVC until the 2.16 upgrade has been accepted. Deleting them removes the rollback path.
 

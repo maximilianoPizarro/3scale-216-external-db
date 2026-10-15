@@ -66,7 +66,7 @@ Compare `n_live_tup` with the embedded database. Run `ANALYZE` first.
 
 ## 5. Scale back
 
-Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. Scale embedded Redis back up for the next cycle. Scale embedded `system-postgresql` to 0 and **keep** the Deployment, Service, and PVC until 2.16 is accepted.
+Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Scale embedded Redis back up for the next cycle. Scale embedded `system-postgresql` to 0 and **keep** the Deployment, Service, and PVC until 2.16 is accepted.
 
 The smoke test runs after the Redis cycle, still on `threescale-2.15`.
 

@@ -49,7 +49,7 @@ Comparar `DBSIZE` con el paso 2. Después `BGREWRITEAOF` y esperar `aof_rewrite_
 
 ## 4. Smoke test y dump fresco
 
-Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. Dejar PostgreSQL y Redis embebidos en 0 y conservar sus PVC.
+Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Dejar PostgreSQL y Redis embebidos en 0 y conservar sus PVC.
 
 En 2.15: login de admin, alta y lectura de una cuenta, una llamada por APIcast, Sidekiq sin atasco.
 

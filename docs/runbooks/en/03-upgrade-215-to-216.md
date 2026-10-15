@@ -26,7 +26,9 @@ oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
 
 If the operator is at 0 replicas, scale the Deployment that exists in `3scale`. On 0.12 and 0.13 it is `threescale-operator-controller-manager-v2`.
 
-Once `system-app-pre` succeeds, rollback is the fresh dump. There is no OLM downgrade.
+Once `system-app-pre` succeeds, rollback is the fresh dump. There is no OLM downgrade. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from `$HOME/3scale-replicas-before-cutover.json`.
+
+If `system-app-pre` fails with `ECONNREFUSED` to `backend-listener:3000`, scale `backend-listener` to 1, wait until Ready, delete Job `system-app-pre`, and annotate `apps.3scale.net/reconcile-now`. Pods `system-searchd-manticore-reindex` in Error from before `system-app` was up can be deleted once a later reindex Job is Complete. The developer portal title **Access Restricted** is the access code, not a down route.
 
 Wait for pods Ready. Expected APIManager annotations:
 

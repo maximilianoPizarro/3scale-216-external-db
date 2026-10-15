@@ -21,7 +21,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: system-redis-external
-          image: registry.redhat.io/rhel9/redis-7
+          image: registry.redhat.io/rhel9/redis-7@sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a
           imagePullPolicy: IfNotPresent
           resources:
             limits:

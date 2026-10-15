@@ -77,9 +77,9 @@ This disconnects the 3scale operator from the embedded PostgreSQL Deployment and
 
 ## 6. Scale up and validate
 
-Scale **embedded Redis** (`backend-redis`, `system-redis`) back up before the Redis runbook. Restore the other replica counts. Then validate portals and APIs.
+Scale **embedded Redis** (`backend-redis`, `system-redis`) back up before the Redis runbook. Restore the other replica counts. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two yourself. Then validate portals and APIs.
 
-After you confirm the data, delete the embedded PostgreSQL Deployment, PVC, and Service.
+Scale embedded `system-postgresql` to 0. **Keep** its Deployment, Service, and PVC until `system-app-pre` has succeeded on 2.16. Deleting them removes the rollback path.
 
 !!! danger "Do not commit secrets or dumps"
     Never commit `*-secret.yaml`, `*.backup`, or `*.rdb` files.

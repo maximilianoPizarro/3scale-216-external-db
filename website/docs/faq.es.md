@@ -20,7 +20,7 @@ Imágenes usadas en la guía oficial y este repo:
 - `registry.redhat.io/rhel9/postgresql-15`
 - `registry.redhat.io/rhel9/redis-7`
 
-Anclar **digest SHA-256** del catálogo de Red Hat. No anclar el tag flotante.
+Los bases anclan digest SHA-256 resueltos el 2026-10-15: PostgreSQL `sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826` y Redis `sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a`. No volver al tag flotante.
 
 ## Redis restore vs persistencia
 

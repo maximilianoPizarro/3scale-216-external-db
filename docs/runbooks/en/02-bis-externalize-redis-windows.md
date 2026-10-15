@@ -152,7 +152,7 @@ oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"backend": {"redis": true}}}}'
 ```
 
-## 7. Scale up 3scale and delete embedded
+## 7. Scale up 3scale and keep the embedded PVCs
 
 ```bash
 oc scale deployment system-memcache --replicas=1
@@ -170,17 +170,11 @@ oc scale deployment apicast-production --replicas=1
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=1
 ```
 
-Include **system-app** at 1; if only the operator is scaled up, the `system-app-pre` hook can fail with `backend-listener` down and `system-app` stays 0/0.
+Include **system-app** and **system-sidekiq** at 1. The operator does not raise them from 0. If only the operator is scaled up, the `system-app-pre` hook can fail with `backend-listener` down and `system-app` stays 0/0.
 
 If replica variables were captured **after** scaling to 0, `${VAR:-1}` is still 0 (`:-` only applies when empty). Use `--replicas=1` (or the previous real value). Do not scale up embedded `backend-redis` or `system-redis`.
 
-Only when everything is healthy:
-
-```bash
-oc delete deployment backend-redis system-redis -n "$THREESCALE_NAMESPACE"
-oc delete pvc backend-redis-storage system-redis-storage -n "$THREESCALE_NAMESPACE"
-oc delete service backend-redis system-redis -n "$THREESCALE_NAMESPACE"
-```
+**Keep** the embedded Deployments, Services, and PVCs until `system-app-pre` has succeeded on 2.16.
 
 ## Rollback
 

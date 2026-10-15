@@ -24,7 +24,7 @@ Completar [Requisitos previos](prerequisites.es.md) antes del paso 1.
 10. **Actualizar OpenShift** después, si aplica, según [Supported Configurations](https://access.redhat.com/articles/2798521).
 11. **Operar el día 2** en `3scale-db`: Redis persistente, backups, digest anclado ([Operación día 2](day-2.es.md)).
 
-Si un paso falla antes de borrar recursos embebidos, ver [Rollback](rollback.es.md).
+Si un paso falla antes de que `system-app-pre` termine bien en 2.16, ver [Rollback](rollback.es.md).
 
 !!! warning "No combinar upgrades"
     No ejecutar el upgrade de 3scale y el de OpenShift en la misma ventana de mantenimiento.

@@ -20,7 +20,7 @@ Images used in the official guide and this repo:
 - `registry.redhat.io/rhel9/postgresql-15`
 - `registry.redhat.io/rhel9/redis-7`
 
-Pin **SHA-256 digests** from the Red Hat catalog. Do not pin floating tags.
+The bases pin SHA-256 digests resolved on 2026-10-15: PostgreSQL `sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826` and Redis `sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a`. Do not switch them back to a floating tag.
 
 ## Redis restore vs persistence
 

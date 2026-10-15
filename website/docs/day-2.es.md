@@ -73,29 +73,26 @@ Guardar copia de los secrets de conexión. Tras un restore como usuario `postgre
 
 ## Anclar y parchear digest de imagen
 
-El operador 3scale ya no dispara ImageChange sobre estos Deployments. Anclar digest SHA-256 del [catálogo de Red Hat](https://catalog.redhat.com/). Quedar dentro de la matriz de 2.16: PostgreSQL 14/15 (preflight del system ≥ 15.0), Redis 7.2.
+Los Deployments de `kustomize/bases/postgresql` y `kustomize/bases/redis-*` anclan estos digest linux/amd64, resueltos en `registry.redhat.io` el 2026-10-15:
 
-En el overlay (`kustomize/overlays/lab-persist` o `prod-persist`):
+| Imagen | Digest |
+|--------|--------|
+| `registry.redhat.io/rhel9/postgresql-15` | `sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826` |
+| `registry.redhat.io/rhel9/redis-7` | `sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a` |
 
-```yaml
-images:
-  - name: registry.redhat.io/rhel9/postgresql-15
-    digest: sha256:<digest>
-  - name: registry.redhat.io/rhel9/redis-7
-    digest: sha256:<digest>
-```
-
-Inventario y rollout:
+El operador 3scale ya no dispara ImageChange sobre estos Deployments. Quedar dentro de la matriz de 2.16: PostgreSQL ≥ 15.0 para system, Redis ≥ 7.2. Para pasar a un digest nuevo, cambiar el campo `image` de esos tres Deployments y hacer rollout:
 
 ```bash
 oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
-oc apply -k kustomize/overlays/lab-persist
+oc apply -k kustomize/bases/postgresql -n 3scale-db
+oc apply -k kustomize/bases/redis-system -n 3scale-db
+oc apply -k kustomize/bases/redis-backend -n 3scale-db
 oc -n 3scale-db rollout status deployment/system-postgresql-external
 oc -n 3scale-db rollout status deployment/backend-redis-external
 oc -n 3scale-db rollout status deployment/system-redis-external
 ```
 
-Un CVE de RHSCL exige un rollout propio. Es un corte de esa base. El operador 3scale no lo dispara.
+Un CVE de estas imágenes es un rollout que se agenda. Es un corte de esa base.
 
 ## Capacidad
 
@@ -118,7 +115,7 @@ Vigilar llenado de PVC y memoria de Redis. Redis vive en RAM.
 
 ![Rutas de ownership y rollback](images/ownership-and-rollback.png)
 
-Rollback antes de borrar recursos embebidos: [Rollback](rollback.es.md).
+Rollback antes de que `system-app-pre` termine bien en 2.16: [Rollback](rollback.es.md). Después de ese Job, restaurar el dump fresco.
 
 ## Riesgos de GitOps
 

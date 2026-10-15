@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
         - name: system-postgresql-external
-          image: registry.redhat.io/rhel9/postgresql-15
+          image: registry.redhat.io/rhel9/postgresql-15@sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826
           imagePullPolicy: IfNotPresent
           env:
             - name: POSTGRESQL_USER

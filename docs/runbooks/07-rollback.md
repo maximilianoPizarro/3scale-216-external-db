@@ -1,12 +1,12 @@
 # Rollback
 
-Usar este runbook cuando el cutover falla **antes** de borrar Deployments y PVC embebidos, o cuando el upgrade del operador 3scale 2.16 entra en bucle de preflight. Copia para clonar el repo: este archivo (inglés: [en/07-rollback.md](en/07-rollback.md)).
+Usar este runbook cuando el cutover falla **antes** de que `system-app-pre` termine bien en 2.16. Hasta ese momento, dejar los Deployments embebidos en 0 réplicas y **conservar** sus PVC. Después de ese Job, el rollback es un restore del dump fresco. No hay downgrade de OLM. Copia para clonar el repo: este archivo (inglés: [en/07-rollback.md](en/07-rollback.md)).
 
-Si los recursos embebidos ya no existen, el rollback implica **restaurar desde backup** (snapshot de PVC, `pg_dump`, `dump.rdb`), no volver `externalComponents` a pods embebidos que ya no están.
+Si los PVC embebidos ya se borraron, el rollback es un restore desde backup (`pg_dump`, `dump.rdb`), no volver `externalComponents` a pods que ya no existen.
 
 ## Quién opera qué
 
-| Namespace | Gestiona el operador | Operás vos |
+| Namespace | Gestiona el operador | Quien opera |
 |-----------|----------------------|------------|
 | `3scale` | `system-app`, APIcast, Zync, `zync-database`, `system-storage` | Secrets de conexión (`system-database`, `system-redis`, `backend-redis`) |
 | `3scale-db` | Nada del operador 3scale tras `externalComponents` | PostgreSQL 15, ambos Redis 7, PVC, imágenes, backups, NetworkPolicy |

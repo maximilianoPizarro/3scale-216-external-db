@@ -134,15 +134,9 @@ oc scale deployment apicast-production --replicas=$APICAST_PRODUCTION_REPLICA_CO
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=1
 ```
 
-`system-postgresql` embebido debe quedar 0/0 (el operador ya no lo reconcilia). Validar portales y APIs.
+`system-postgresql` embebido debe quedar 0/0 (el operador ya no lo reconcilia). El operador no sube `system-app` ni `system-sidekiq` desde 0; los `oc scale` de arriba son obligatorios. Validar portales y APIs.
 
-Solo cuando los datos estén correctos:
-
-```bash
-oc delete deployment system-postgresql -n "$THREESCALE_NAMESPACE"
-oc delete pvc postgresql-data -n "$THREESCALE_NAMESPACE"
-oc delete service system-postgresql -n "$THREESCALE_NAMESPACE"
-```
+**Conservar** el Deployment, Service y PVC embebidos hasta que `system-app-pre` termine bien en 2.16. Borrarlos elimina el camino de rollback.
 
 ## Rollback
 

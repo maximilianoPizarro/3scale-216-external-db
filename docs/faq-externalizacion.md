@@ -20,7 +20,7 @@ El operador 3scale **deja de reconciliar** el Deployment y el PVC al marcar `spe
 | Persistencia | PVC + StorageClass + VolumeSnapshot / backups |
 | Logs | stdout/stderr del contenedor → stack de logging del cluster (ClusterLogForwarder, Loki, Elasticsearch, SIEM) |
 | Rotación de logs de motor | No la hace el operador 3scale |
-| Parches de imagen RHSCL | Quien opera las BDD (el operador ya no dispara ImageChange sobre esos Deployments) |
+| Parches de imagen `rhel9/postgresql-15` y `rhel9/redis-7` | Quien opera las BDD (el operador ya no dispara ImageChange sobre esos Deployments) |
 | Conexión desde 3scale | Secrets `system-database`, `system-redis`, `backend-redis` en el namespace de 3scale |
 
 Borrar el `APIManager` no debe borrar los PVC. Los recursos de este paquete no llevan `ownerReferences` del APIManager.
@@ -38,7 +38,7 @@ Imágenes usadas en la guía oficial y en este repo:
 - `registry.redhat.io/rhel9/postgresql-15`
 - `registry.redhat.io/rhel9/redis-7`
 
-Anclar **digest SHA-256** (catálogo de Red Hat), no el tag flotante. Inventario:
+Anclar **digest SHA-256**, no el tag flotante. Los bases ya traen los digest linux/amd64 resueltos el 2026-10-15: PostgreSQL `sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826` y Redis `sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a`. Inventario:
 
 ```bash
 oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'

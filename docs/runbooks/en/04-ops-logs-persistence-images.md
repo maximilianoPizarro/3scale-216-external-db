@@ -26,7 +26,7 @@ Redis: restore mode only during cutover. In steady state, persist ConfigMap (`sa
 
 ## Images
 
-Pin digest in the overlay or in `kustomize` `images:`. After an RHSCL CVE, update digest and rollout; the 3scale operator will not do it.
+The bases pin the digest on the Deployment `image` field. After a CVE in `rhel9/postgresql-15` or `rhel9/redis-7`, update that digest and roll the three Deployments. The 3scale operator will not do it.
 
 ```bash
 oc get deploy -n 3scale-db -o yaml | grep "image:"

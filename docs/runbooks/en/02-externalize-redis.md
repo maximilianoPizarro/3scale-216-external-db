@@ -83,9 +83,9 @@ oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"backend": {"redis": true}}}}'
 ```
 
-## 7. Scale up 3scale and delete embedded
+## 7. Scale up 3scale and keep the embedded PVCs
 
-Validate portals and traffic. Only then delete Deployments/PVC/Service `backend-redis` and `system-redis` in the 3scale namespace.
+Validate portals and traffic. Leave embedded `backend-redis` and `system-redis` at 0 and **keep** their Deployments, Services, and PVCs until `system-app-pre` has succeeded on 2.16. The operator does not raise `system-app` or `system-sidekiq` from 0.
 
 ## Rollback
 

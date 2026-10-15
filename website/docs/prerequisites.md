@@ -19,7 +19,7 @@ This lab was tested on OpenShift 4.19. See [Tested versions](tested-versions.md)
 ## Access and tooling
 
 - `oc` logged in to the target cluster
-- Pull access to `registry.redhat.io` for RHSCL images
+- Pull access to `registry.redhat.io` for `rhel9/postgresql-15` and `rhel9/redis-7`
 - Linux bash for dump/restore (Git Bash on Windows: runbooks `01-bis` / `02-bis` in `docs/runbooks/`)
 
 ## Storage

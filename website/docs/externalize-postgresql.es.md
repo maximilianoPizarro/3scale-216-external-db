@@ -77,9 +77,9 @@ Eso desconecta el reconcile del operador 3scale sobre el PostgreSQL embebido y s
 
 ## 6. Subir y validar
 
-Volver a subir **Redis embebido** (`backend-redis`, `system-redis`) antes del runbook de Redis. Restaurar el resto de réplicas. Luego validar portales y APIs.
+Volver a subir **Redis embebido** (`backend-redis`, `system-redis`) antes del runbook de Redis. Restaurar el resto de réplicas. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos a mano. Luego validar portales y APIs.
 
-Tras confirmar los datos, borrar el Deployment, PVC y Service de PostgreSQL embebido.
+Escalar `system-postgresql` embebido a 0. **Conservar** su Deployment, Service y PVC hasta que `system-app-pre` termine bien en 2.16. Borrarlos elimina el camino de rollback.
 
 !!! danger "No commitear secrets ni dumps"
     No commitear archivos `*-secret.yaml`, `*.backup` ni `*.rdb`.

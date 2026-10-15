@@ -14,7 +14,7 @@
 10. Upgrade OpenShift **afterward**, if applicable, per [Supported Configurations](https://access.redhat.com/articles/2798521).
 11. Day 2 in `3scale-db`: persistent Redis, backups, digest ([06-day-2.md](06-day-2.md)).
 
-If a step fails before you delete embedded resources: [07-rollback.md](07-rollback.md). Site: `website/docs/rollback.md`.
+If a step fails before `system-app-pre` succeeds on 2.16: [07-rollback.md](07-rollback.md). Site: `website/docs/rollback.md`.
 
 Do not combine the 3scale jump and the OCP jump in the same window.
 

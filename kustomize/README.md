@@ -38,15 +38,10 @@ kustomize build kustomize/overlays/lab
 oc apply -k kustomize/overlays/lab
 ```
 
-Para fijar digest:
+Para cambiar el digest, editar el campo `image` de los tres Deployments en `kustomize/bases/postgresql` y `kustomize/bases/redis-*`. Los bases ya anclan estos digest linux/amd64, resueltos el 2026-10-15:
 
-```yaml
-images:
-  - name: registry.redhat.io/rhel9/postgresql-15
-    digest: sha256:<digest>
-  - name: registry.redhat.io/rhel9/redis-7
-    digest: sha256:<digest>
-```
+- `registry.redhat.io/rhel9/postgresql-15@sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826`
+- `registry.redhat.io/rhel9/redis-7@sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a`
 
 Ajustar `storage` de los PVC y los `resources` de Redis copiando los valores reales de la instalación 2.15. La guía oficial documenta un límite de 32Gi en Redis; no copiarlo si el despliegue actual usa menos.
 

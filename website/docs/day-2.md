@@ -73,29 +73,26 @@ Keep a copy of the connection secrets. After a restore as user `postgres`, re-ap
 
 ## Pin and patch image digests
 
-The 3scale operator no longer triggers ImageChange on these Deployments. Pin SHA-256 digests from the [Red Hat catalog](https://catalog.redhat.com/). Stay inside the 2.16 matrix: PostgreSQL 14/15 (system preflight ≥ 15.0), Redis 7.2.
+The Deployments in `kustomize/bases/postgresql` and `kustomize/bases/redis-*` pin these linux/amd64 digests, resolved from `registry.redhat.io` on 2026-10-15:
 
-In the overlay (`kustomize/overlays/lab-persist` or `prod-persist`):
+| Image | Digest |
+|-------|--------|
+| `registry.redhat.io/rhel9/postgresql-15` | `sha256:242c66cfab1873ecbde84ba8c8bf7488b1c40a820f41820d76efa58634519826` |
+| `registry.redhat.io/rhel9/redis-7` | `sha256:81535d5fd51bc5e83108db6f86a15b6b22412922d4a590235d1fba56751b967a` |
 
-```yaml
-images:
-  - name: registry.redhat.io/rhel9/postgresql-15
-    digest: sha256:<digest>
-  - name: registry.redhat.io/rhel9/redis-7
-    digest: sha256:<digest>
-```
-
-Inventory and rollout:
+The 3scale operator no longer triggers ImageChange on these Deployments. Stay inside the 2.16 matrix: PostgreSQL ≥ 15.0 for system, Redis ≥ 7.2. To move to a newer digest, change the `image` field on those three Deployments and roll them:
 
 ```bash
 oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
-oc apply -k kustomize/overlays/lab-persist
+oc apply -k kustomize/bases/postgresql -n 3scale-db
+oc apply -k kustomize/bases/redis-system -n 3scale-db
+oc apply -k kustomize/bases/redis-backend -n 3scale-db
 oc -n 3scale-db rollout status deployment/system-postgresql-external
 oc -n 3scale-db rollout status deployment/backend-redis-external
 oc -n 3scale-db rollout status deployment/system-redis-external
 ```
 
-A CVE in RHSCL is **your** rollout. It is an outage for that database.
+A CVE in these images is a rollout you schedule. It is an outage for that database.
 
 ## Capacity
 
@@ -118,7 +115,7 @@ Watch PVC fill rate and Redis memory. Redis is in-memory.
 
 ![Ownership and rollback paths](images/ownership-and-rollback.png)
 
-Rollback before you delete embedded resources: [Rollback](rollback.md).
+Rollback before `system-app-pre` succeeds on 2.16: [Rollback](rollback.md). After that job, restore the fresh dump.
 
 ## GitOps pitfalls
 

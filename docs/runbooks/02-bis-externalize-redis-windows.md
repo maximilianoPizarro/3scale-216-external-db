@@ -152,7 +152,7 @@ oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"backend": {"redis": true}}}}'
 ```
 
-## 7. Subir 3scale y borrar embebidos
+## 7. Subir 3scale y conservar los PVC embebidos
 
 ```bash
 oc scale deployment system-memcache --replicas=1
@@ -170,17 +170,11 @@ oc scale deployment apicast-production --replicas=1
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=1
 ```
 
-Incluir **system-app** a 1; si solo se sube el operador, el hook `system-app-pre` puede fallar por `backend-listener` caído y `system-app` quedarse en 0/0.
+Incluir **system-app** y **system-sidekiq** en 1. El operador no los sube desde 0. Si solo se sube el operador, el hook `system-app-pre` puede fallar por `backend-listener` caído y `system-app` quedarse en 0/0.
 
 Si las variables de réplica se capturaron **después** de bajar a 0, `${VAR:-1}` sigue valiendo 0 (el `:-` solo aplica si está vacía). Usar `--replicas=1` (o el valor real previo). No subir `backend-redis` ni `system-redis` embebidos.
 
-Solo cuando esté bien:
-
-```bash
-oc delete deployment backend-redis system-redis -n "$THREESCALE_NAMESPACE"
-oc delete pvc backend-redis-storage system-redis-storage -n "$THREESCALE_NAMESPACE"
-oc delete service backend-redis system-redis -n "$THREESCALE_NAMESPACE"
-```
+**Conservar** los Deployments, Services y PVC embebidos hasta que `system-app-pre` termine bien en 2.16.
 
 ## Rollback
 

@@ -81,11 +81,7 @@ oc scale deployment/backend-redis --replicas=0
 
 ## 3. Deploy Redis 7
 
-```bash
-oc apply -k kustomize/overlays/lab
-```
-
-The **restore** ConfigMap sets `save ""` and `appendonly no` (required to load the RDB). The overlay is idempotent over PostgreSQL 15.
+`values-cutover.yaml` sets `threescale.redis.configMode` to `restore` (`save ""` and `appendonly no`, required to load the RDB).
 
 Wait for `1/1` on `backend-redis-external` and `system-redis-external`:
 
@@ -130,8 +126,9 @@ oc exec -n "$REDIS_NAMESPACE" "$S_EXT" -- bash -c 'redis-cli INFO persistence' |
 
 ## 5. Enable persistence
 
+Switch `extraValueFiles` to `/values-216-external.yaml` (`configMode: persist` and Redis auth), then restart:
+
 ```bash
-oc apply -k kustomize/overlays/lab-persist
 oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
 oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
 oc -n "$REDIS_NAMESPACE" rollout status deployment/backend-redis-external

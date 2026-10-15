@@ -1,0 +1,116 @@
+{{- if .Values.threescale.externalDb.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: postgresql-db-external
+  namespace: 3scale-db
+  labels:
+    app: system-postgresql-external
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: system-postgresql-service
+  namespace: 3scale-db
+  labels:
+    app: system-postgresql-external
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    deployment: system-postgresql-external
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgresql-data-external
+  namespace: 3scale-db
+  labels:
+    app: system-postgresql-external
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.threescale.storage.databaseClass | quote }}
+  resources:
+    requests:
+      storage: {{ .Values.threescale.storage.databaseSize }}
+  volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: system-postgresql-external
+  namespace: 3scale-db
+  labels:
+    app: system-postgresql-external
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      deployment: system-postgresql-external
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        deployment: system-postgresql-external
+        app: system-postgresql-external
+    spec:
+      serviceAccountName: postgresql-db-external
+      containers:
+        - name: system-postgresql-external
+          image: {{ .Values.threescale.images.postgresql | quote }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: POSTGRESQL_USER
+              valueFrom:
+                secretKeyRef:
+                  key: DB_USER
+                  name: system-database
+            - name: POSTGRESQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: DB_PASSWORD
+                  name: system-database
+            - name: POSTGRESQL_DATABASE
+              value: system
+          ports:
+            - containerPort: 5432
+              protocol: TCP
+          livenessProbe:
+            tcpSocket:
+              port: 5432
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -i
+                - -c
+                - psql -h 127.0.0.1 -U $POSTGRESQL_USER -q -d $POSTGRESQL_DATABASE -c 'SELECT 1'
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          volumeMounts:
+            - mountPath: /var/lib/pgsql/data
+              name: postgresql-data-external
+      volumes:
+        - name: postgresql-data-external
+          persistentVolumeClaim:
+            claimName: postgresql-data-external
+{{- end }}

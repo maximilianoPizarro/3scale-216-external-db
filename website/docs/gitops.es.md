@@ -1,77 +1,33 @@
 # GitOps y RHACM
 
-Usar dos fases. **No** aplicar el operador 3scale y las bases in-cluster a la vez en un cluster vacío. El APIManager 2.15 debe crear PostgreSQL y Redis embebidos primero. Los recursos de `3scale-db` entran en la ventana de externalización.
+OpenShift GitOps aplica este repositorio a través del Validated Patterns Operator. El recurso es el [Pattern](pattern-cr.es.md). No se aplican ApplicationSets a mano.
 
-Sustituir placeholders antes del sync:
+| Wave | Aplicación |
+|------|------------|
+| 2 | `vault`, `openshift-external-secrets` |
+| 4 | `external-secrets-3scale` |
+| 5 | `external-db` |
+| 7 | `threescale-apimanager` |
 
-- `REPLACE_REPO_URL` en ApplicationSets bajo `gitops/` y `gitops/rhacm/`
-- `REPLACE_WILDCARD_DOMAIN` en `kustomize/overlays/lab-apimanager/kustomization.yaml`
-- `REPLACE_EFS_FILESYSTEM_ID` en `kustomize/overlays/lab-efs/kustomization.yaml`
+La Subscription de 3scale sale de `clusterGroup.subscriptions`. El sync se mira con `oc get applications -n vp-gitops`.
 
-Antes del APIManager hace falta una StorageClass **RWX**. En AWS de laboratorio: crear el filesystem EFS, poner `fileSystemId` en `kustomize/overlays/lab-efs` y aplicar ese overlay (cluster-scoped; no va en el ApplicationSet).
+`targetRevision` tiene que ser la rama que contiene los charts. Hasta que se fusione `feat/image-digests-vault-eso`, esa es la revisión de `examples/pattern-cr/`.
 
-## Fase 1 — operador 3scale 2.15 + APIManager
+## Orden de values en una migración 2.15
 
-```bash
-oc apply -k gitops/
-```
+1. `/values-215.yaml` — bases embebidas.
+2. `/values-cutover.yaml` — bases externas, Redis `configMode: restore`, `externalComponents` sigue en false.
+3. `/values-216-external.yaml` — canal `threescale-2.16`, `externalComponents`, auth de Redis, `configMode: persist`.
 
-| Wave | Application | Path |
-|------|-------------|------|
-| 0 | `threescale-operator` | `kustomize/overlays/lab-operator` |
-| 5 | `threescale-apimanager` | `kustomize/overlays/lab-apimanager` |
+Dejar el Pattern en `values-cutover.yaml` después de la ventana hace que un reinicio de Redis pierda datos (`save ""`, `appendonly no`).
 
-Destino: namespace `3scale`. `SkipDryRunOnMissingResource` cubre el CRD del APIManager hasta que el CSV esté listo.
+## Errores de GitOps
 
-## Fase 2 — PostgreSQL 15 + Redis 7 (después del dump)
-
-Crear antes el secret `system-database` en `3scale-db` (`DB_USER`, `DB_PASSWORD`). Plantilla: `kustomize/bases/postgresql/secret.example.yaml`.
-
-```bash
-oc apply -k gitops/external-db
-```
-
-| Wave | Application | Path |
-|------|-------------|------|
-| 0 | `threescale-ext-namespace` | `kustomize/bases/namespace` |
-| 1 | `threescale-ext-postgresql` | `kustomize/bases/postgresql` |
-| 1 | `threescale-ext-redis-config` | `kustomize/bases/redis-config-restore` |
-| 2 | `threescale-ext-redis-backend` | `kustomize/bases/redis-backend` |
-| 2 | `threescale-ext-redis-system` | `kustomize/bases/redis-system` |
-
-Destino: `3scale-db`. `prune: false` para no borrar PVC.
-
-Tras el restore de Redis, cambiar `redis-config.path` a `kustomize/bases/redis-config-persist` en el ApplicationSet de BDD. Dejarlo así el día 2. `selfHeal: true` revierte un edit manual del ConfigMap. Ver [Operación día 2](day-2.es.md).
-
-## Trampas de GitOps
-
-!!! danger "Tres errores habituales en el cutover"
+!!! danger "Tres errores del corte"
     | Riesgo | Qué hacer |
     |--------|-----------|
-    | El ApplicationSet sigue en `redis-config-restore` | Cambiar el path a `redis-config-persist` después del cutover. `selfHeal: true` revierte un edit manual del ConfigMap y un restart **borra datos de Redis**. |
-    | `prune: true` en Applications de external-db | Dejar `prune: false` para que un sync no borre PVC. |
-    | Mezclar GitOps in-cluster y RHACM | Un solo controlador por cluster destino. |
+    | El Pattern se queda en `values-cutover.yaml` | Pasar `extraValueFiles` a `/values-216-external.yaml` después de revisar los portales. |
+    | `systemStorageClass` pasa de la clase ReadWriteMany a `gp3-csi` | Mantener `efs-sc` (o la clase RWX) en `values-216-external.yaml`. |
+    | Dos controladores de GitOps en el mismo cluster | Usar el Patterns Operator. No aplicar además otro Application de Argo CD para estos charts. |
 
-    Checklist completo de día 2: [Operación día 2](day-2.es.md). Rutas de rollback: [Rollback](rollback.es.md).
-
-## RHACM (hub)
-
-Misma separación:
-
-```bash
-oc apply -k gitops/rhacm/              # Placement + operador 3scale PUSH
-oc apply -k gitops/rhacm/external-db   # overlay prod → 3scale-db en managed cluster
-```
-
-!!! warning "No mezclar controladores"
-    No usar GitOps in-cluster (`gitops/`) y RHACM contra el mismo cluster destino.
-
-## Fallback sin Argo CD
-
-```bash
-oc apply -k kustomize/overlays/lab-operator
-oc apply -k kustomize/overlays/lab-efs
-oc apply -k kustomize/overlays/lab-apimanager
-# más tarde:
-oc apply -k kustomize/overlays/lab
-```
+Régimen: [Operación día 2](day-2.es.md). Credenciales: [Rotación de credenciales](credential-rotation.es.md).

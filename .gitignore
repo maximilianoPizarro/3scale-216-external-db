@@ -6,3 +6,8 @@
 /tmp/
 site/
 .venv/
+values-secret.yaml
+pattern-vault.init
+vault.init
+charts/*.tgz
+**/charts/*.tgz

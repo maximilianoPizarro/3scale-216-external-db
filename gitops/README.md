@@ -1,5 +1,7 @@
 # GitOps (OpenShift GitOps / Argo CD)
 
+La instalación soportada es el Pattern CR en `examples/pattern-cr/`. OpenShift GitOps lo aplica el Validated Patterns Operator. Estos ApplicationSet son el layout anterior.
+
 Dos fases. **No** aplicar operador y BDD en el mismo momento en un cluster vacío: el APIManager 2.15 debe crear PostgreSQL/Redis embebidos primero; las instancias de `3scale-db` entran en la ventana de externalización.
 
 Sustituir `REPLACE_REPO_URL` en:

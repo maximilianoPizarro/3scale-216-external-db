@@ -17,7 +17,7 @@ Red Hat guides for this migration:
 |------------------|-----------------|
 | PostgreSQL 10 upgrade — on-cluster | [Externalize PostgreSQL](externalize-postgresql.md) + `kustomize/bases/postgresql` |
 | Redis 6 upgrade — on-cluster | [Externalize Redis](externalize-redis.md) + `kustomize/bases/redis-*` |
-| Operator upgrade | [Upgrade operator to 2.16](upgrade-216.md) + `kustomize/overlays/operator-216` |
+| Operator upgrade | [Upgrade operator to 2.16](upgrade-216.md) via `values-216-external.yaml` |
 | Lab install before externalization | [Install 3scale 2.15 (lab)](install-lab.md) |
 | Day 2 (self-managed databases) | [Day 2 operations](day-2.md) + `docs/runbooks/06-day-2.md` |
 

@@ -31,13 +31,7 @@ oc scale deployment/backend-redis --replicas=0
 
 ## 3. Deploy Redis 7
 
-```bash
-oc apply -k kustomize/overlays/lab
-# or database GitOps (after system-database secret in 3scale-db):
-# oc apply -k gitops/external-db
-```
-
-The **restore** ConfigMap sets `save ""` and `appendonly no` (required to load the RDB). If PostgreSQL 15 already exists, the lab overlay is idempotent over that Deployment.
+`values-cutover.yaml` sets `threescale.redis.configMode` to `restore`. The ConfigMap sets `save ""` and `appendonly no` (required to load the RDB).
 
 Wait for `1/1` on `backend-redis-external` and `system-redis-external`.
 
@@ -62,13 +56,7 @@ Wait for `aof_rewrite_in_progress = 0`.
 
 ## 5. Enable persistence
 
-GitOps: in the ApplicationSet, set `redis-config.path` → `kustomize/bases/redis-config-persist`.
-
-Without GitOps:
-
-```bash
-oc apply -k kustomize/overlays/lab-persist
-```
+Switch `extraValueFiles` to `/values-216-external.yaml` only after the RDB load and the portal checks. That file sets `configMode: persist` and Redis auth.
 
 Restart Redis Deployments. Confirm the ConfigMap no longer has `save ""` and `appendonly` is `yes`.
 

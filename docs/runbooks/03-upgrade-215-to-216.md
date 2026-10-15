@@ -14,7 +14,12 @@ oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 
 ## Canal OLM
 
-Cambiar la Subscription del operador 3scale al canal `threescale-2.16`. Aprobar InstallPlans si el approval es manual.
+Cambiar `extraValueFiles` del Pattern a `/values-216-external.yaml`. Ese archivo pone el canal `threescale-2.16`. Aprobar InstallPlans si el approval es manual.
+
+```bash
+oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
+  -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
+```
 
 Esperar pods listos. Anotaciones esperadas en el APIManager:
 

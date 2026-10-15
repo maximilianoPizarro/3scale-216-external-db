@@ -1,0 +1,13 @@
+apiVersion: v2
+name: 3scale-216-external-db
+description: Validated Pattern for in-cluster PostgreSQL and Redis externalization before upgrading 3scale from 2.15 to 2.16
+type: application
+version: 1.1.0
+appVersion: "2.16"
+dependencies:
+  - name: clustergroup
+    version: 0.9.*
+    repository: https://charts.validatedpatterns.io
+maintainers:
+  - name: Maximiliano Pizarro
+    email: mapizarr@redhat.com

@@ -1,0 +1,20 @@
+# Migration cluster: 3scale 2.15 with embedded databases.
+# Requires OperatorHub channel threescale-2.15 and a ReadWriteMany StorageClass (values-215.yaml).
+# During the window, change extraValueFiles to /values-cutover.yaml.
+# After restore and portal checks, change it to /values-216-external.yaml.
+apiVersion: gitops.hybrid-cloud-patterns.io/v1alpha1
+kind: Pattern
+metadata:
+  name: 3scale-216-external-db
+  namespace: openshift-operators
+spec:
+  clusterGroupName: hub
+  extraValueFiles:
+    - /values-215.yaml
+  gitSpec:
+    targetRepo: https://github.com/maximilianoPizarro/3scale-216-external-db.git
+    targetRevision: feat/image-digests-vault-eso
+  multiSourceConfig:
+    enabled: true
+    clusterGroupChartVersion: "0.9.*"
+    helmRepoUrl: https://charts.validatedpatterns.io

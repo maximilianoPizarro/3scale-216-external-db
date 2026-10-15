@@ -20,44 +20,28 @@ Complete [Prerequisites](prerequisites.md) before step 1.
 8. **Restore replicas**. Validate Admin Portal, Developer Portal, and APIcast.
 9. **Upgrade the 3scale operator** to channel `threescale-2.16` ([Upgrade operator to 2.16](upgrade-216.md)).
 10. **Upgrade OpenShift** afterwards, if needed, per [Supported Configurations](https://access.redhat.com/articles/2798521).
-11. **Operate day 2** in `3scale-db`: persist Redis, backups, pinned digests ([Day 2 operations](day-2.md)).
+11. **Operate day 2** in `3scale-db`: `threescale.redis.configMode: persist`, backups, pinned digests ([Day 2 operations](day-2.md), [Credential rotation](credential-rotation.md)).
 
 If a step fails before you delete embedded resources, see [Rollback](rollback.md).
 
 !!! warning "Do not combine upgrades"
     Do not run the 3scale upgrade and the OpenShift upgrade in the same maintenance window.
 
-## Lab vs production overlays
+## Value files
 
-| Overlay | StorageClass | Use |
-|---------|--------------|-----|
-| `lab` / `lab-persist` | `gp3-csi` (example) | Test clusters |
-| `prod` / `prod-persist` | Cluster default | Production-like |
+| File | When |
+|------|------|
+| `values-215.yaml` | Install. Channel `threescale-2.15`, embedded databases, `systemStorageClass: efs-sc`. |
+| `values-cutover.yaml` | Maintenance window. External databases exist. 3scale still uses the embedded ones. Redis `configMode: restore`, no auth. |
+| `values-216-external.yaml` | After restore and portal checks. Channel `threescale-2.16`, `externalComponents`, Redis auth, `configMode: persist`. |
 
-The 3scale procedure is the same. Only storage defaults differ.
+`values-216-singlenode.yaml` is a different scenario. It installs 2.16 directly on one node and is not a 2.15 migration.
 
-## Deployment options
+## Deploy
 
-=== "GitOps (recommended)"
+```bash
+oc apply -f examples/pattern-cr/hub-215.yaml
+./pattern.sh make load-secrets
+```
 
-    ```bash
-    # Phase 1: 3scale operator 2.15 + APIManager
-    oc apply -k gitops/
-    oc apply -k gitops/rhacm/              # managed cluster via ACM hub
-
-    # Phase 2: in-cluster databases (create system-database secret in 3scale-db first)
-    oc apply -k gitops/external-db
-    oc apply -k gitops/rhacm/external-db
-    ```
-
-=== "Kustomize (no Argo CD)"
-
-    ```bash
-    oc apply -k kustomize/overlays/lab-operator
-    oc apply -k kustomize/overlays/lab-efs
-    oc apply -k kustomize/overlays/lab-apimanager
-    # after dump/restore:
-    oc apply -k kustomize/overlays/lab
-    ```
-
-See [GitOps and RHACM](gitops.md) for wave ordering and RHACM placement.
+During the window, set `extraValueFiles` to `/values-cutover.yaml`. After validation, set it to `/values-216-external.yaml`. See [Install with a Pattern CR](pattern-cr.md).

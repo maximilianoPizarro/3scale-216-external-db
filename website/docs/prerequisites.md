@@ -19,6 +19,7 @@ This lab was tested on OpenShift 4.19. See [Tested versions](tested-versions.md)
 ## Access and tooling
 
 - `oc` logged in to the target cluster
+- Validated Patterns Operator (`patterns-operator`, channel `fast`) so the [Pattern CR](pattern-cr.md) can install GitOps, Vault, and External Secrets
 - Pull access to `registry.redhat.io` for RHSCL images
 - Linux bash for dump/restore (Git Bash on Windows: runbooks `01-bis` / `02-bis` in `docs/runbooks/`)
 

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: external-db
+description: In-cluster PostgreSQL 15 and Redis 7 for 3scale system and backend
+type: application
+version: 0.1.0

@@ -9,7 +9,7 @@
 
 Reusable manifests and runbooks to **externalize** PostgreSQL (system) and Redis (system + backend) **in-cluster** before upgrading the 3scale operator to **2.16**.
 
-Starting with 2.16, the 3scale operator **stops reconciling** those embedded databases. *External* means **outside the operator lifecycle** — databases **can remain in-cluster** (this repo uses namespace `3scale-db`). Zync database can stay internal. This package covers dump/restore + Kustomize/GitOps, not RDS or off-cluster migration.
+Starting with 2.16, the 3scale operator **stops reconciling** those embedded databases. *External* means **outside the operator lifecycle** — databases **can remain in-cluster** (this repo uses namespace `3scale-db`). Zync database can stay internal. This package covers dump/restore and a Validated Pattern, not RDS or off-cluster migration.
 
 **Documentation site (English / Español):** [https://maximilianopizarro.github.io/3scale-216-external-db/](https://maximilianopizarro.github.io/3scale-216-external-db/)
 
@@ -20,10 +20,9 @@ Validated in lab — see [tested versions](website/docs/tested-versions.md). Ada
 ## How to use this repository
 
 1. Confirm [prerequisites](website/docs/prerequisites.md) and the [Supported Configurations](https://access.redhat.com/articles/2798521) matrix for **both** 3scale 2.15 and 2.16 on your OpenShift version.
-2. Edit placeholders: `REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID`, and `REPLACE_REPO_URL` (GitOps).
-3. Install 3scale **2.15** with embedded databases and validate portals ([install lab](website/docs/install-lab.md) or runbook `05`).
-4. Externalize PostgreSQL and Redis in-cluster (runbooks `01` and `02`; Git Bash: `01-bis` / `02-bis`).
-5. Upgrade the operator to **2.16**, then operate day 2 in `3scale-db` (runbooks `03`, `06`; rollback: `07`).
+2. Install the Validated Patterns Operator and apply `examples/pattern-cr/hub-215.yaml` ([Pattern CR](website/docs/pattern-cr.md)). The apps domain is injected. Do not commit it.
+3. Externalize PostgreSQL and Redis in-cluster (runbooks `01` and `02`). During the window set `extraValueFiles` to `/values-cutover.yaml`.
+4. After portal checks, set `extraValueFiles` to `/values-216-external.yaml` (channel 2.16, Redis persist, credential rotation in runbook `09`).
 
 Full sequence: [documentation site — Migration sequence](https://maximilianopizarro.github.io/3scale-216-external-db/sequence/).
 
@@ -35,34 +34,21 @@ Full sequence: [documentation site — Migration sequence](https://maximilianopi
 | [docs/runbooks/](docs/runbooks/) | Operational runbooks (Spanish, clone-friendly) |
 | [docs/runbooks/en/](docs/runbooks/en/) | Operational runbooks (English, clone-friendly) |
 | [docs/faq-externalizacion.md](docs/faq-externalizacion.md) | Logs, PVC, images, operations FAQ |
-| [kustomize/](kustomize/) | Operator OLM, APIManager, external DB manifests |
-| [gitops/](gitops/) | Phase 1: operator. [gitops/external-db](gitops/external-db/): phase 2 DBs |
-| [gitops/rhacm/](gitops/rhacm/) | RHACM hub patterns |
+| [examples/pattern-cr/](examples/pattern-cr/) | Pattern custom resources |
+| [charts/all/](charts/all/) | APIManager, external databases, ExternalSecret |
+| [values-global.yaml](values-global.yaml) | Image digests and Vault paths |
 
 ## Quick start (Linux)
 
-Edit placeholders in overlays (`REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID`, `REPLACE_REPO_URL` for GitOps) before applying.
+Requires channel `threescale-2.15` and a ReadWriteMany StorageClass named `efs-sc`. A one-node cluster without that channel uses `examples/pattern-cr/hub-216-singlenode.yaml` instead. That file is not a 2.15 migration.
 
 ```bash
-# 1. Operator 2.15
-oc apply -k kustomize/overlays/lab-operator
-
-# 2. RWX for system-storage (EFS CSI on AWS lab)
-oc apply -k kustomize/overlays/lab-efs
-
-# 3. APIManager with embedded PostgreSQL
-oc apply -k kustomize/overlays/lab-apimanager
-
-# 4. After dump/restore (runbooks 01 and 02): external databases
-oc apply -k kustomize/overlays/lab
-
-# 5. After validation: operator channel 2.16
-oc apply -k kustomize/overlays/operator-216
+oc apply -f examples/pattern-cr/hub-215.yaml
+cp values-secret.yaml.template ~/values-secret-3scale-216-external-db.yaml
+./pattern.sh make load-secrets
 ```
 
 Full sequence: [website — Migration sequence](https://maximilianopizarro.github.io/3scale-216-external-db/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
-
-GitOps: `oc apply -k gitops/` (phase 1) then `oc apply -k gitops/external-db` (phase 2). See [gitops/README.md](gitops/README.md).
 
 ## Windows / Git Bash
 
@@ -75,7 +61,7 @@ Use Git Bash, not PowerShell:
 
 Do **not** commit secrets or migration artifacts:
 
-- `*-secret.yaml`
+- `*-secret.yaml`, `values-secret.yaml`, `pattern-vault.init`, `vault.init`
 - `*.backup`, `*.rdb`
 - `.env`
 
@@ -91,7 +77,7 @@ These paths are listed in [.gitignore](.gitignore).
 
 Paquete reutilizable para **externalizar** PostgreSQL (system) y Redis (system + backend) **in-cluster** antes de actualizar el operador 3scale a **2.16**.
 
-A partir de 2.16, el operador 3scale **deja de reconciliar** esas bases embebidas. *External* significa **fuera del ciclo de vida del operador** — las bases **pueden seguir in-cluster** (este repo usa el namespace `3scale-db`). Zync puede quedar interna. Este paquete cubre dump/restore + Kustomize/GitOps, no RDS ni migración off-cluster.
+A partir de 2.16, el operador 3scale **deja de reconciliar** esas bases embebidas. *External* significa **fuera del ciclo de vida del operador** — las bases **pueden seguir in-cluster** (este repo usa el namespace `3scale-db`). Zync puede quedar interna. Este paquete cubre dump/restore y un Validated Pattern, no RDS ni migración off-cluster.
 
 **Sitio de documentación (inglés / español):** [https://maximilianopizarro.github.io/3scale-216-external-db/es/](https://maximilianopizarro.github.io/3scale-216-external-db/es/)
 
@@ -102,10 +88,9 @@ Validado en laboratorio — ver [versiones probadas](website/docs/tested-version
 ## Cómo usar este repositorio
 
 1. Confirmar [requisitos previos](website/docs/prerequisites.es.md) y la matriz [Supported Configurations](https://access.redhat.com/articles/2798521) para **2.15 y 2.16** en la versión de OpenShift del cluster.
-2. Editar placeholders: `REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID` y `REPLACE_REPO_URL` (GitOps).
-3. Instalar 3scale **2.15** con bases embebidas y validar portales ([instalar lab](website/docs/install-lab.es.md) o runbook `05`).
-4. Externalizar PostgreSQL y Redis in-cluster (runbooks `01` y `02`; Git Bash: `01-bis` / `02-bis`).
-5. Actualizar el operador a **2.16** y operar el día 2 en `3scale-db` (runbooks `03`, `06`; rollback: `07`).
+2. Instalar el Validated Patterns Operator y aplicar `examples/pattern-cr/hub-215.yaml` ([Pattern CR](website/docs/pattern-cr.es.md)). El dominio de apps lo inyecta el operador. No commitearlo.
+3. Externalizar PostgreSQL y Redis in-cluster (runbooks `01` y `02`). En la ventana, `extraValueFiles` pasa a `/values-cutover.yaml`.
+4. Tras revisar los portales, `extraValueFiles` pasa a `/values-216-external.yaml` (canal 2.16, Redis persistente, rotación en el runbook `09`).
 
 Secuencia completa: [sitio — Secuencia de migración](https://maximilianopizarro.github.io/3scale-216-external-db/es/sequence/).
 
@@ -117,27 +102,21 @@ Secuencia completa: [sitio — Secuencia de migración](https://maximilianopizar
 | [docs/runbooks/](docs/runbooks/) | Runbooks operativos (español) |
 | [docs/runbooks/en/](docs/runbooks/en/) | Runbooks operativos (inglés) |
 | [docs/faq-externalizacion.md](docs/faq-externalizacion.md) | FAQ: logs, PVC, imágenes |
-| [kustomize/](kustomize/) | Operador OLM, APIManager, manifiestos BDD |
-| [gitops/](gitops/) | Fase 1: operador. [gitops/external-db](gitops/external-db/): fase 2 BDD |
-| [gitops/rhacm/](gitops/rhacm/) | Patrones RHACM (hub) |
+| [examples/pattern-cr/](examples/pattern-cr/) | Pattern custom resources |
+| [charts/all/](charts/all/) | APIManager, bases externas, ExternalSecret |
+| [values-global.yaml](values-global.yaml) | Digest de imágenes y paths de Vault |
 
 ## Inicio rápido (Linux)
 
-Editar placeholders en overlays (`REPLACE_WILDCARD_DOMAIN`, `REPLACE_EFS_FILESYSTEM_ID`, `REPLACE_REPO_URL` en GitOps) antes de aplicar.
+Hace falta el canal `threescale-2.15` y una StorageClass ReadWriteMany llamada `efs-sc`. Un cluster de un solo nodo sin ese canal usa `examples/pattern-cr/hub-216-singlenode.yaml`. Ese archivo no es una migración 2.15.
 
 ```bash
-oc apply -k kustomize/overlays/lab-operator
-oc apply -k kustomize/overlays/lab-efs
-oc apply -k kustomize/overlays/lab-apimanager
-# tras dump/restore (runbooks 01 y 02):
-oc apply -k kustomize/overlays/lab
-# tras validar:
-oc apply -k kustomize/overlays/operator-216
+oc apply -f examples/pattern-cr/hub-215.yaml
+cp values-secret.yaml.template ~/values-secret-3scale-216-external-db.yaml
+./pattern.sh make load-secrets
 ```
 
 Secuencia completa: [sitio — Secuencia de migración](https://maximilianopizarro.github.io/3scale-216-external-db/es/sequence/) · [docs/runbooks/00-secuencia-y-matriz.md](docs/runbooks/00-secuencia-y-matriz.md)
-
-GitOps: `oc apply -k gitops/` (fase 1) y luego `oc apply -k gitops/external-db` (fase 2). Ver [gitops/README.md](gitops/README.md).
 
 ## Windows / Git Bash
 
@@ -148,4 +127,4 @@ Usar Git Bash, no PowerShell:
 
 ## Seguridad
 
-**No** commitear secrets ni artefactos de migración: `*-secret.yaml`, `*.backup`, `*.rdb`, `.env` (ver [.gitignore](.gitignore)).
+**No** commitear secrets ni artefactos de migración: `*-secret.yaml`, `values-secret.yaml`, `pattern-vault.init`, `vault.init`, `*.backup`, `*.rdb`, `.env` (ver [.gitignore](.gitignore)).

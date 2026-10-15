@@ -1,0 +1,23 @@
+# Single-node sandbox. Installs 3scale 2.16 with external databases from the start.
+# system-storage uses the default block StorageClass because this cluster has one node and no RWX driver.
+# Pattern CR: examples/pattern-cr/hub-216-singlenode.yaml
+clusterGroup:
+  subscriptions:
+    threescale:
+      channel: threescale-2.16
+
+threescale:
+  externalDb:
+    enabled: true
+  redis:
+    auth:
+      enabled: true
+    configMode: persist
+  externalComponents:
+    system:
+      database: true
+      redis: true
+    backend:
+      redis: true
+  storage:
+    systemStorageClass: gp3-csi

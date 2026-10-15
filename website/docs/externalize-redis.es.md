@@ -26,11 +26,7 @@ oc scale deployment/backend-redis --replicas=0
 
 ## 3. Desplegar Redis 7
 
-```bash
-oc apply -k kustomize/overlays/lab
-```
-
-El ConfigMap **restore** trae `save ""` y `appendonly no` (necesario para cargar el RDB). Esperar `backend-redis-external` y `system-redis-external` en `1/1`.
+`values-cutover.yaml` pone `threescale.redis.configMode` en `restore`. El ConfigMap trae `save ""` y `appendonly no` (necesario para cargar el RDB). Esperar `backend-redis-external` y `system-redis-external` en `1/1`.
 
 ## 4. Restaurar RDB y reescribir AOF
 
@@ -46,11 +42,7 @@ Cuando los pods estén Ready, ejecutar `redis-cli BGREWRITEAOF` en cada pod y es
 
 ## 5. Activar persistencia
 
-```bash
-oc apply -k kustomize/overlays/lab-persist
-```
-
-O cambiar en GitOps `redis-config.path` a `kustomize/bases/redis-config-persist`. Reiniciar los Deployments Redis. Comprobar que el ConfigMap ya no tiene `save ""` y `appendonly` es `yes`.
+Pasar `extraValueFiles` del Pattern a `/values-216-external.yaml` solo después de cargar el RDB y revisar los portales. Ese archivo pone `configMode: persist` y auth de Redis. Reiniciar los Deployments Redis. Comprobar que el ConfigMap ya no tiene `save ""` y `appendonly` es `yes`.
 
 ## 6. Parchear secrets y el APIManager
 

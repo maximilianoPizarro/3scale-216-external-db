@@ -1,0 +1,155 @@
+{{- if .Values.threescale.externalDb.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config-external
+  namespace: 3scale-db
+data:
+  redis.conf: |
+{{ .Files.Get (printf "files/redis-%s.conf" .Values.threescale.redis.configMode) | indent 4 }}
+{{- $auth := .Values.threescale.redis.auth.enabled }}
+{{- $image := .Values.threescale.images.redis }}
+{{- $size := .Values.threescale.storage.databaseSize }}
+{{- $class := .Values.threescale.storage.databaseClass }}
+{{- range $i := (list
+  (dict "name" "backend-redis-external" "service" "backend-redis-service" "pvc" "backend-redis-storage-external" "auth" "backend-redis-auth")
+  (dict "name" "system-redis-external" "service" "system-redis-service" "pvc" "system-redis-storage-external" "auth" "system-redis-auth")) }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $i.name }}
+  namespace: 3scale-db
+  labels:
+    app: {{ $i.name }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $i.service }}
+  namespace: 3scale-db
+  labels:
+    app: {{ $i.name }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+  selector:
+    deployment: {{ $i.name }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ $i.pvc }}
+  namespace: 3scale-db
+  labels:
+    app: {{ $i.name }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ $class | quote }}
+  resources:
+    requests:
+      storage: {{ $size }}
+  volumeMode: Filesystem
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $i.name }}
+  namespace: 3scale-db
+  labels:
+    app: {{ $i.name }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
+  selector:
+    matchLabels:
+      deployment: {{ $i.name }}
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        deployment: {{ $i.name }}
+        app: {{ $i.name }}
+    spec:
+      serviceAccountName: {{ $i.name }}
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: {{ $i.name }}
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          {{- if $auth }}
+          command:
+            - container-entrypoint
+            - bash
+            - -c
+            - exec redis-server /etc/redis.d/redis.conf --requirepass "$REDIS_PASSWORD"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $i.auth }}
+                  key: password
+          readinessProbe:
+            exec:
+              command:
+                - container-entrypoint
+                - bash
+                - -c
+                - redis-cli -a "$REDIS_PASSWORD" --no-auth-warning set liveness-probe "`date`" | grep OK
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 1
+            failureThreshold: 3
+          {{- else }}
+          env:
+            - name: REDIS_CONF
+              value: /etc/redis.d/redis.conf
+          readinessProbe:
+            exec:
+              command:
+                - container-entrypoint
+                - bash
+                - -c
+                - redis-cli set liveness-probe "`date`" | grep OK
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 1
+            failureThreshold: 3
+          {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 1
+            failureThreshold: 3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/redis/data
+            - name: redis-config-external
+              mountPath: /etc/redis.d/
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: {{ $i.pvc }}
+        - name: redis-config-external
+          configMap:
+            name: redis-config-external
+            items:
+              - key: redis.conf
+                path: redis.conf
+{{- end }}
+{{- end }}

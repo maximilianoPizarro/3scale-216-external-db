@@ -22,44 +22,28 @@ Completar [Requisitos previos](prerequisites.es.md) antes del paso 1.
 8. **Restaurar réplicas**. Validar Admin Portal, Developer Portal y APIcast.
 9. **Actualizar el operador 3scale** al canal `threescale-2.16` ([Actualizar operador a 2.16](upgrade-216.es.md)).
 10. **Actualizar OpenShift** después, si aplica, según [Supported Configurations](https://access.redhat.com/articles/2798521).
-11. **Operar el día 2** en `3scale-db`: Redis persistente, backups, digest anclado ([Operación día 2](day-2.es.md)).
+11. **Operar el día 2** en `3scale-db`: `threescale.redis.configMode: persist`, backups, digest anclado ([Operación día 2](day-2.es.md), [Rotación de credenciales](credential-rotation.es.md)).
 
 Si un paso falla antes de borrar recursos embebidos, ver [Rollback](rollback.es.md).
 
 !!! warning "No combinar upgrades"
     No ejecutar el upgrade de 3scale y el de OpenShift en la misma ventana de mantenimiento.
 
-## Overlays de laboratorio vs producción
+## Archivos de values
 
-| Overlay | StorageClass | Uso |
-|---------|--------------|-----|
-| `lab` / `lab-persist` | `gp3-csi` (ejemplo) | Clusters de prueba |
-| `prod` / `prod-persist` | Por defecto del cluster | Entornos tipo producción |
+| Archivo | Cuándo |
+|---------|--------|
+| `values-215.yaml` | Instalación. Canal `threescale-2.15`, bases embebidas, `systemStorageClass: efs-sc`. |
+| `values-cutover.yaml` | Ventana. Las bases externas existen. 3scale sigue con las embebidas. Redis `configMode: restore`, sin auth. |
+| `values-216-external.yaml` | Tras el restore y los portales. Canal `threescale-2.16`, `externalComponents`, auth de Redis, `configMode: persist`. |
 
-El procedimiento 3scale es el mismo. Solo cambian los valores por defecto de almacenamiento.
+`values-216-singlenode.yaml` es otro escenario. Instala 2.16 directo en un nodo y no es una migración 2.15.
 
-## Opciones de despliegue
+## Despliegue
 
-=== "GitOps (recomendado)"
+```bash
+oc apply -f examples/pattern-cr/hub-215.yaml
+./pattern.sh make load-secrets
+```
 
-    ```bash
-    # Fase 1: operador 3scale 2.15 + APIManager
-    oc apply -k gitops/
-    oc apply -k gitops/rhacm/              # managed cluster vía hub ACM
-
-    # Fase 2: bases in-cluster (crear antes el secret system-database en 3scale-db)
-    oc apply -k gitops/external-db
-    oc apply -k gitops/rhacm/external-db
-    ```
-
-=== "Kustomize (sin Argo CD)"
-
-    ```bash
-    oc apply -k kustomize/overlays/lab-operator
-    oc apply -k kustomize/overlays/lab-efs
-    oc apply -k kustomize/overlays/lab-apimanager
-    # tras dump/restore:
-    oc apply -k kustomize/overlays/lab
-    ```
-
-Ver [GitOps y RHACM](gitops.es.md) para el orden por waves y Placement de RHACM.
+En la ventana, `extraValueFiles` pasa a `/values-cutover.yaml`. Tras validar, pasa a `/values-216-external.yaml`. Ver [Instalar con un Pattern CR](pattern-cr.es.md).

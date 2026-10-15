@@ -1,0 +1,42 @@
+metadata_version: "1.0"
+name: 3scale-216-external-db
+pattern_version: "1.1"
+description: >
+  In-cluster PostgreSQL 15 and Redis 7 for 3scale, with HashiCorp Vault and
+  External Secrets, installed by the Validated Patterns Operator.
+  Hub-only. Two value files: 2.16 on a single node, or a 2.15 to 2.16 migration.
+display_name: 3scale 2.15 to 2.16 external databases
+repo_url: https://github.com/maximilianoPizarro/3scale-216-external-db
+docs_repo_url: https://github.com/maximilianoPizarro/3scale-216-external-db
+issues_url: https://github.com/maximilianoPizarro/3scale-216-external-db/issues
+docs_url: https://maximilianopizarro.github.io/3scale-216-external-db/
+ci_url: https://github.com/maximilianoPizarro/3scale-216-external-db/actions
+tier: sandbox
+org: maximilianoPizarro
+owners:
+  - maximilianoPizarro
+clustergroupname: hub
+maintainers:
+  - name: Maximiliano Pizarro
+    email: mapizarr@redhat.com
+minOCPVersion: "4.19"
+gitBranch: main
+useCases:
+  - devops
+  - integration
+products:
+  - name: Red Hat OpenShift Container Platform
+    version: "4.19"
+  - name: Red Hat 3scale API Management
+    version: "2.16"
+  - name: External Secrets Operator
+    version: stable-v1
+  - name: Red Hat OpenShift GitOps
+    version: "1.10"
+extra_features:
+  spoke_support: false
+  hub_only_support: true
+  hypershift_support: false
+external_requirements:
+  pattern_cr_examples: examples/pattern-cr/
+  vault: HashiCorp Vault is installed by the hashicorp-vault chart. It is not a separate prerequisite.

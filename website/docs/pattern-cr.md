@@ -41,7 +41,7 @@ spec:
   channel: fast
   installPlanApproval: Automatic
   name: patterns-operator
-  source: redhat-operators
+  source: community-operators
   sourceNamespace: openshift-marketplace
 EOF
 oc get csv -n openshift-operators | grep patterns-operator

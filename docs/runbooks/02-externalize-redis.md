@@ -31,13 +31,7 @@ oc scale deployment/backend-redis --replicas=0
 
 ## 3. Desplegar Redis 7
 
-```bash
-oc apply -k kustomize/overlays/lab
-# o GitOps de BDD (tras el secret system-database en 3scale-db):
-# oc apply -k gitops/external-db
-```
-
-El ConfigMap **restore** trae `save ""` y `appendonly no` (necesario para cargar el RDB). Si PostgreSQL 15 ya existía, el overlay lab es idempotente sobre ese Deployment.
+`values-cutover.yaml` deja `threescale.redis.configMode` en `restore`. El ConfigMap trae `save ""` y `appendonly no` (necesario para cargar el RDB).
 
 Esperar `1/1` en `backend-redis-external` y `system-redis-external`.
 
@@ -62,13 +56,7 @@ Esperar `aof_rewrite_in_progress = 0`.
 
 ## 5. Activar persistencia
 
-GitOps: en el ApplicationSet, `redis-config.path` → `kustomize/bases/redis-config-persist`.
-
-Sin GitOps:
-
-```bash
-oc apply -k kustomize/overlays/lab-persist
-```
+Pasar `extraValueFiles` a `/values-216-external.yaml` solo después de cargar el RDB y revisar los portales. Ese archivo pone `configMode: persist` y auth de Redis.
 
 Reiniciar los Deployments Redis. Comprobar que el ConfigMap ya no tiene `save ""` y que `appendonly` es `yes`.
 

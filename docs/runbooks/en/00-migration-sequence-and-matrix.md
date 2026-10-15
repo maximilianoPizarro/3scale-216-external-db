@@ -18,29 +18,21 @@ If a step fails before you delete embedded resources: [07-rollback.md](07-rollba
 
 Do not combine the 3scale jump and the OCP jump in the same window.
 
-## Lab vs target
+## Pattern value files
 
-The `lab` overlay uses example StorageClass `gp3-csi`. The `prod` overlay uses the cluster default StorageClass. The 3scale procedure is the same.
+| File | When |
+|------|------|
+| `values-215.yaml` | Install. Channel `threescale-2.15`, embedded databases, `systemStorageClass: efs-sc`. |
+| `values-cutover.yaml` | Maintenance window. External databases, Redis `configMode: restore`, `externalComponents` false. |
+| `values-216-external.yaml` | After restore and portal checks. Channel `threescale-2.16`, `externalComponents`, Redis auth, `configMode: persist`. |
 
-Deploy the new databases:
+A ReadWriteMany StorageClass named `efs-sc` is required. Do not apply `hub-215.yaml` without it.
 
 ```bash
-# GitOps phase 1: operator 2.15
-oc apply -k gitops/
-oc apply -k gitops/rhacm/                 # if the target is a managed cluster
-
-# GitOps phase 2: databases (system-database secret in 3scale-db first)
-oc apply -k gitops/external-db
-oc apply -k gitops/rhacm/external-db
-
-# without Argo CD
-oc apply -k kustomize/overlays/lab-operator
-oc apply -k kustomize/overlays/lab-efs
-oc apply -k kustomize/overlays/lab-apimanager
-oc apply -k kustomize/overlays/lab
+oc apply -f examples/pattern-cr/hub-215.yaml
+cp values-secret.yaml.template ~/values-secret-3scale-216-external-db.yaml
+./pattern.sh make load-secrets
 ```
-
-RHACM: [gitops/rhacm/README.md](../../../gitops/rhacm/README.md).
 
 ## Summary matrix (2.16)
 

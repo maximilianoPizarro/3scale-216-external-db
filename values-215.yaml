@@ -1,0 +1,28 @@
+# Migration start. Operator channel 2.15 and embedded databases.
+# systemStorageClass must be a ReadWriteMany class that already exists on the cluster.
+# Pattern CR: examples/pattern-cr/hub-215.yaml
+# Child Applications only inherit files listed in global.extraValueFiles.
+global:
+  extraValueFiles:
+    - /values-215.yaml
+
+clusterGroup:
+  subscriptions:
+    threescale:
+      channel: threescale-2.15
+
+threescale:
+  externalDb:
+    enabled: false
+  redis:
+    auth:
+      enabled: false
+    configMode: restore
+  externalComponents:
+    system:
+      database: false
+      redis: false
+    backend:
+      redis: false
+  storage:
+    systemStorageClass: efs-sc

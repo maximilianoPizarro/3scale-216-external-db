@@ -35,17 +35,9 @@ oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
 ```bash
 DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
 DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create namespace "$DB_NAMESPACE" --dry-run=client -o yaml | oc apply -f -
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n "$DB_NAMESPACE"
-oc apply -k kustomize/bases/postgresql -n "$DB_NAMESPACE"
 ```
 
-Confirm `DB_USER` and `DB_PASSWORD` are not empty before the pod initializes the PVC.
-
-Deploy **only** PostgreSQL 15 first. Do not apply the full `lab` overlay yet. That overlay also creates Redis 7. Wait for `system-postgresql-external` at `1/1`.
+Copy the same user and password into Vault (`secret/hub/3scale-postgresql`) and set the Pattern `extraValueFiles` to `/values-cutover.yaml`. That file turns on chart `external-db` and leaves `externalComponents` false, so the Secrets in namespace `3scale` stay on the embedded databases until restore finishes. Wait for `system-postgresql-external` at `1/1`. Redis 7 comes up in the same chart with `configMode: restore`; load `dump.rdb` in the Redis runbook before you switch to `values-216-external.yaml`.
 
 ## 4. Restore
 

@@ -1,0 +1,29 @@
+# Steady state after the PostgreSQL and Redis cutover.
+# Keep the ReadWriteMany class used for system-storage. Do not switch it to gp3-csi.
+# Pattern CR: point extraValueFiles at this file after restore and portal checks.
+# values-cutover.yaml is the step before this one. It keeps channel 2.15 and does not publish URLs into namespace 3scale.
+# Child Applications only inherit files listed in global.extraValueFiles.
+global:
+  extraValueFiles:
+    - /values-216-external.yaml
+
+clusterGroup:
+  subscriptions:
+    threescale:
+      channel: threescale-2.16
+
+threescale:
+  externalDb:
+    enabled: true
+  redis:
+    auth:
+      enabled: true
+    configMode: persist
+  externalComponents:
+    system:
+      database: true
+      redis: true
+    backend:
+      redis: true
+  storage:
+    systemStorageClass: efs-sc

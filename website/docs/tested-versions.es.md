@@ -16,6 +16,9 @@ Matriz de producto: [Supported Configurations](https://access.redhat.com/article
 | **3scale destino** | 2.16.4 — CSV `0.13.4`, canal `threescale-2.16` |
 | **PostgreSQL** | 15 — `registry.redhat.io/rhel9/postgresql-15` |
 | **Redis** | 7 — `registry.redhat.io/rhel9/redis-7` (system + backend) |
+| **Instalación** | Validated Pattern. Los digest están en `values-global.yaml`. Ver [Anclar digest de imágenes](image-digests.es.md). |
+
+Una instalación de OpenShift 4.21 de un solo nodo con `values-216-singlenode.yaml` es un 2.16 directo. No es esta migración 2.15. Ese escenario usa `gp3-csi` para `system-storage` porque hay un solo nodo.
 
 ## Almacenamiento
 

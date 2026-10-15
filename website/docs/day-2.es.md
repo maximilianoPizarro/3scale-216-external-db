@@ -5,13 +5,13 @@ Tras marcar `externalComponents`, el **operador 3scale** sigue gestionando `syst
 Copia para clonar el repo: `docs/runbooks/06-day-2.md`. Referencia corta: `docs/runbooks/04-ops-logs-persistencia-imagenes.md`.
 
 !!! danger "Redis tiene que quedar en modo persistencia"
-    El cutover usa `save ""` y `appendonly no` para que Redis cargue `dump.rdb`. En régimen el ConfigMap tiene que salir de `kustomize/bases/redis-config-persist` (`save` + `appendonly yes`).
+    El cutover usa `save ""` y `appendonly no` para que Redis cargue `dump.rdb` (`threescale.redis.configMode: restore` en `values-cutover.yaml`). En régimen el ConfigMap tiene que salir de `configMode: persist` en `values-216-external.yaml` (`save` + `appendonly yes`).
     Si GitOps vuelve a `redis-config-restore`, un restart **borra datos**.
 
 ## Checklist en régimen
 
 - [ ] El ConfigMap de Redis tiene líneas `save` y `appendonly yes` (no `save ""`)
-- [ ] En GitOps, `redis-config.path` es `kustomize/bases/redis-config-persist` (o se aplicó `*-persist`)
+- [ ] `extraValueFiles` del Pattern es `/values-216-external.yaml` (`threescale.redis.configMode: persist`)
 - [ ] Los digest de imagen están anclados (PostgreSQL 15 y Redis 7), no el tag flotante
 - [ ] Tamaño de PVC y `resources` coinciden con la carga de 2.15 (los valores de lab son ejemplos)
 - [ ] `pg_dump` + VolumeSnapshot periódicos de PostgreSQL
@@ -42,17 +42,7 @@ oc -n 3scale-db get configmap redis-config-external -o yaml | grep -E 'save |app
 
 Debe haber `save 900 1` (y el resto de `save`) y `appendonly yes`. **No** dejar `save ""` ni `appendonly no` después del cutover.
 
-Aplicar la config persistente:
-
-```bash
-# lab
-oc apply -k kustomize/overlays/lab-persist
-
-# StorageClass por defecto
-oc apply -k kustomize/overlays/prod-persist
-```
-
-Con GitOps, poner `redis-config.path` en `kustomize/bases/redis-config-persist` en el ApplicationSet de BDD y reiniciar:
+Poner `threescale.redis.configMode` en `persist` (`values-216-external.yaml`) y dejar que el Pattern sincronice. Luego reiniciar:
 
 ```bash
 oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/system-redis-external
@@ -75,21 +65,12 @@ Guardar copia de los secrets de conexión. Tras un restore como usuario `postgre
 
 El operador 3scale ya no dispara ImageChange sobre estos Deployments. Anclar digest SHA-256 del [catálogo de Red Hat](https://catalog.redhat.com/). Quedar dentro de la matriz de 2.16: PostgreSQL 14/15 (preflight del system ≥ 15.0), Redis 7.2.
 
-En el overlay (`kustomize/overlays/lab-persist` o `prod-persist`):
-
-```yaml
-images:
-  - name: registry.redhat.io/rhel9/postgresql-15
-    digest: sha256:<digest>
-  - name: registry.redhat.io/rhel9/redis-7
-    digest: sha256:<digest>
-```
+Poner `threescale.images.postgresql` y `threescale.images.redis` en `values-global.yaml` con `registry.redhat.io/...@sha256:<digest>`. Procedimiento: [Anclar digest de imágenes](image-digests.es.md).
 
 Inventario y rollout:
 
 ```bash
 oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.template.spec.containers[0].image}{"\n"}{end}'
-oc apply -k kustomize/overlays/lab-persist
 oc -n 3scale-db rollout status deployment/system-postgresql-external
 oc -n 3scale-db rollout status deployment/backend-redis-external
 oc -n 3scale-db rollout status deployment/system-redis-external
@@ -124,7 +105,7 @@ Rollback antes de borrar recursos embebidos: [Rollback](rollback.es.md).
 
 | Riesgo | Qué hacer |
 |--------|-----------|
-| El ApplicationSet sigue listando `redis-config-restore` | Cambiar el path a `redis-config-persist` después del cutover. `selfHeal: true` revertirá un edit manual del ConfigMap. |
+| El Pattern sigue en `values-cutover.yaml` | Pasar `extraValueFiles` a `/values-216-external.yaml` después del cutover. |
 | `prune: true` | Dejar `prune: false` para que un sync no borre PVC. |
 | Mezclar GitOps in-cluster y RHACM | Un solo controlador por destino. Ver [GitOps y RHACM](gitops.es.md). |
 

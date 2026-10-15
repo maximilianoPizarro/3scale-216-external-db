@@ -61,6 +61,9 @@ plugins:
             Home: Inicio
             Why this repo: Motivación
             Prerequisites: Requisitos previos
+            Install with a Pattern CR: Instalar con un Pattern CR
+            Pin image digests: Anclar digest de imágenes
+            Credential rotation: Rotación de credenciales
             Official documentation: Documentación oficial
             Tested versions: Versiones probadas
             Migration sequence: Secuencia de migración
@@ -77,6 +80,9 @@ nav:
   - Home: index.md
   - Why this repo: why.md
   - Prerequisites: prerequisites.md
+  - Install with a Pattern CR: pattern-cr.md
+  - Pin image digests: image-digests.md
+  - Credential rotation: credential-rotation.md
   - Official documentation: official-docs.md
   - Tested versions: tested-versions.md
   - Migration sequence: sequence.md
@@ -102,6 +108,9 @@ markdown_extensions:
       permalink: true
 
 extra:
+  version:
+    provider: mike
+    default: validated-pattern
   generator: false
   social:
     - icon: fontawesome/brands/github

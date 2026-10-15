@@ -1,41 +1,28 @@
 # Instalar 3scale 2.15 (lab)
 
-Instalar el **operador 3scale 2.15** y un APIManager con PostgreSQL y Redis **embebidos** antes de externalizar. El overlay de BDD **no** instala el operador 3scale.
+Instalar el **operador 3scale 2.15** y un APIManager con PostgreSQL y Redis **embebidos** antes de externalizar. La instalación es el [Pattern CR](pattern-cr.es.md). `values-215.yaml` deja `threescale.externalDb.enabled` en false.
 
-Completar primero [Requisitos previos](prerequisites.es.md).
+Completar primero [Requisitos previos](prerequisites.es.md). Parar si OperatorHub no tiene el canal `threescale-2.15` o el cluster no tiene una StorageClass ReadWriteMany. No sustituir esta página por el Pattern de 2.16 en un solo nodo.
 
-## 1. Instalar el operador 3scale (OLM)
+## 1. Instalar con el Pattern CR
 
 ```bash
-oc apply -k kustomize/overlays/lab-operator
+oc apply -f examples/pattern-cr/hub-215.yaml
+./pattern.sh make load-secrets
+oc get applications -n vp-gitops
 oc -n 3scale get csv,subscription,pods
 ```
 
-Esperar CSV `Succeeded` y el pod `threescale-operator-controller-manager-v2`.
-
-Catálogo: `redhat-operators` / `openshift-marketplace`. En desconectado, cambiar `spec.source` de la Subscription.
+Esperar CSV `Succeeded` y el pod `threescale-operator-controller-manager-v2`. La Subscription sale de `clusterGroup.subscriptions` en `values-hub.yaml`, con canal `threescale-2.15` por `values-215.yaml`.
 
 ## 2. Proveer volumen RWX para `system-storage`
 
 3scale exige **ReadWriteMany** para el PVC `system-storage`. En AWS, `gp3-csi` es RWO. El PVC queda Pending (`Volume capabilities not supported`).
 
-En laboratorio AWS: crear un filesystem EFS en la VPC del cluster (mount targets + TCP 2049 desde el SG de nodos). Luego aplicar el overlay EFS CSI:
+En laboratorio AWS: crear un filesystem EFS en la VPC del cluster (mount targets + TCP 2049 desde el SG de nodos) y una StorageClass llamada `efs-sc`. `values-215.yaml` pone `threescale.storage.systemStorageClass` en ese nombre. El chart del APIManager lo lee. El dominio de apps lo inyecta el operador en `global.localClusterDomain`. No guardar el hostname del sandbox en git.
 
 ```bash
-# fileSystemId en kustomize/overlays/lab-efs/kustomization.yaml
-oc apply -k kustomize/overlays/lab-efs
-oc -n openshift-cluster-csi-drivers get csv,pods | grep efs
 oc get sc efs-sc
-```
-
-Detalle: `kustomize/overlays/lab-efs/README.md`. En otra nube, sustituir `efs-sc` por una StorageClass RWX equivalente.
-
-## 3. Desplegar APIManager 2.15 (PostgreSQL embebido)
-
-Poner el dominio de apps en `kustomize/overlays/lab-apimanager/kustomization.yaml` (`REPLACE_WILDCARD_DOMAIN`, por ejemplo `apps.cluster.example.com`). El overlay ya apunta `fileStorage` a `efs-sc`.
-
-```bash
-oc apply -k kustomize/overlays/lab-apimanager
 oc -n 3scale get apimanager,pods,pvc
 ```
 
@@ -51,16 +38,4 @@ Cuando el APIManager esté healthy, seguir con [Externalizar PostgreSQL](externa
 
 ## 4. Cambiar el canal del operador a 2.16 (solo después de externalizar)
 
-```bash
-oc apply -k kustomize/overlays/operator-216
-```
-
-GitOps fase 1 (operador 3scale + APIManager, no BDD):
-
-```bash
-oc apply -k gitops/
-# hub ACM:
-oc apply -k gitops/rhacm/
-```
-
-Poner `REPLACE_REPO_URL` en los ApplicationSet (`gitops/*.yaml`, `gitops/rhacm/*.yaml`) y el wildcard en el overlay `lab-apimanager` antes del sync.
+Cambiar `spec.extraValueFiles` del Pattern de `/values-cutover.yaml` a `/values-216-external.yaml`. Ese archivo pone el canal `threescale-2.16`, `externalComponents`, auth de Redis y `threescale.redis.configMode: persist`. Dejar `systemStorageClass` en la clase ReadWriteMany.

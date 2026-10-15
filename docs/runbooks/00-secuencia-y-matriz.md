@@ -18,29 +18,21 @@ Si un paso falla antes de borrar recursos embebidos: [07-rollback.md](07-rollbac
 
 No combinar el salto de 3scale y el de OCP en la misma ventana.
 
-## Laboratorio vs destino
+## Values del Pattern
 
-El overlay `lab` usa StorageClass de ejemplo `gp3-csi`. El overlay `prod` usa la StorageClass por defecto del cluster. El procedimiento 3scale es el mismo.
+| Archivo | Cuándo |
+|---------|--------|
+| `values-215.yaml` | Instalación. Canal `threescale-2.15`, bases embebidas, `systemStorageClass: efs-sc`. |
+| `values-cutover.yaml` | Ventana. Bases externas, Redis `configMode: restore`, `externalComponents` en false. |
+| `values-216-external.yaml` | Tras el restore y los portales. Canal `threescale-2.16`, `externalComponents`, auth de Redis, `configMode: persist`. |
 
-Despliegue de las BDD nuevas:
+Hace falta una StorageClass ReadWriteMany llamada `efs-sc`. Sin eso, no aplicar `hub-215.yaml`.
 
 ```bash
-# Fase 1 GitOps: operador 2.15
-oc apply -k gitops/
-oc apply -k gitops/rhacm/                 # si el destino es un managed cluster
-
-# Fase 2 GitOps: BDD (secret system-database en 3scale-db antes)
-oc apply -k gitops/external-db
-oc apply -k gitops/rhacm/external-db
-
-# sin Argo CD
-oc apply -k kustomize/overlays/lab-operator
-oc apply -k kustomize/overlays/lab-efs
-oc apply -k kustomize/overlays/lab-apimanager
-oc apply -k kustomize/overlays/lab
+oc apply -f examples/pattern-cr/hub-215.yaml
+cp values-secret.yaml.template ~/values-secret-3scale-216-external-db.yaml
+./pattern.sh make load-secrets
 ```
-
-RHACM: [gitops/rhacm/README.md](../../gitops/rhacm/README.md).
 
 ## Matriz resumida (2.16)
 

@@ -6,3 +6,9 @@
 /tmp/
 site/
 .venv/
+values-secret.yaml
+website/mkdocs.ci.yml
+pattern-vault.init
+vault.init
+charts/*.tgz
+**/charts/*.tgz

@@ -72,13 +72,7 @@ oc create secret generic system-database \
 
 If `base64 -d` fails, use `base64 --decode`. Confirm the secret in `3scale-db` does not have empty `DB_USER` / `DB_PASSWORD` before the pod initializes the PVC.
 
-Deploy **only** PostgreSQL 15 (not the full `lab` overlay: that also creates Redis 7 and leaves the Redis dump for later):
-
-```bash
-oc apply -k kustomize/bases/postgresql -n "$DB_NAMESPACE"
-```
-
-On AWS lab, if `gp3-csi` is required, patch PVC `postgresql-data-external`. Database GitOps: `oc apply -k gitops/external-db` (after the secret; includes Redis — use only if the Redis dump is already done or embedded Redis will be brought up again above).
+Copy the same user and password into Vault (`secret/hub/3scale-postgresql`) and set `extraValueFiles` to `/values-cutover.yaml`. Chart `external-db` creates PostgreSQL 15 and Redis 7. `externalComponents` stays false until the restore finishes.
 
 Wait for `1/1` on `system-postgresql-external`.
 

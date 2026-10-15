@@ -1,0 +1,94 @@
+---
+main:
+  clusterGroupName: hub
+
+clusterGroup:
+  name: hub
+  argoProjects:
+    - threescale
+
+  namespaces:
+    3scale:
+      operatorGroup: true
+      targetNamespaces:
+        - 3scale
+    3scale-db: {}
+    external-secrets-operator:
+      operatorGroup: true
+      targetNamespaces: []
+    vault: {}
+
+  subscriptions:
+    threescale:
+      name: 3scale-operator
+      namespace: 3scale
+      channel: threescale-2.15
+      source: redhat-operators
+    eso:
+      name: openshift-external-secrets-operator
+      namespace: external-secrets-operator
+      channel: stable-v1
+      source: redhat-operators
+
+  applications:
+    vault:
+      name: vault
+      namespace: vault
+      argoProject: threescale
+      chart: hashicorp-vault
+      chartVersion: 0.1.*
+      syncWave: "2"
+
+    openshift-external-secrets:
+      name: openshift-external-secrets
+      namespace: external-secrets
+      argoProject: threescale
+      chart: openshift-external-secrets
+      chartVersion: 0.0.*
+      syncWave: "2"
+
+    external-secrets-3scale:
+      name: external-secrets-3scale
+      namespace: 3scale-db
+      argoProject: threescale
+      path: charts/all/external-secrets-3scale
+      syncWave: "4"
+      ignoreDifferences:
+        - group: external-secrets.io
+          kind: ExternalSecret
+          jqPathExpressions:
+            - .status
+
+    external-db:
+      name: external-db
+      namespace: 3scale-db
+      argoProject: threescale
+      path: charts/all/external-db
+      syncWave: "5"
+
+    threescale-apimanager:
+      name: threescale-apimanager
+      namespace: 3scale
+      argoProject: threescale
+      path: charts/all/threescale-apimanager
+      syncWave: "7"
+
+# Defaults match scenario B before the cutover: operator 2.15, embedded databases.
+# Scenario files override these keys. Do not enable externalDb here.
+threescale:
+  externalDb:
+    enabled: false
+  redis:
+    auth:
+      enabled: false
+    configMode: restore
+  externalComponents:
+    system:
+      database: false
+      redis: false
+    backend:
+      redis: false
+  storage:
+    databaseClass: gp3-csi
+    databaseSize: 1Gi
+    systemStorageClass: ""

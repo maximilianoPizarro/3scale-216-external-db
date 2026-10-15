@@ -1,5 +1,7 @@
 # Kustomize: bases de datos in-cluster para 3scale 2.16
 
+La instalación soportada es el Pattern CR en `examples/pattern-cr/`. Estos bases son el layout anterior. No aplicarlos con `oc apply -k` en un cluster que ya gestiona el Pattern.
+
 En 3scale 2.16, PostgreSQL (system) y Redis (system y backend) ya no son gestionados por el operador. Estos manifiestos despliegan esas instancias **dentro del cluster**, fuera del reconcile del `APIManager`.
 
 Imágenes de referencia (anclar digest en cada entorno):

@@ -1,0 +1,28 @@
+# Maintenance window. External PostgreSQL and Redis exist, 3scale still uses the embedded databases.
+# Channel stays threescale-2.15. Redis has no password and uses the restore ConfigMap so dump.rdb can load.
+# Point extraValueFiles here after the dumps and before values-216-external.yaml.
+# Child Applications only inherit files listed in global.extraValueFiles.
+global:
+  extraValueFiles:
+    - /values-cutover.yaml
+
+clusterGroup:
+  subscriptions:
+    threescale:
+      channel: threescale-2.15
+
+threescale:
+  externalDb:
+    enabled: true
+  redis:
+    auth:
+      enabled: false
+    configMode: restore
+  externalComponents:
+    system:
+      database: false
+      redis: false
+    backend:
+      redis: false
+  storage:
+    systemStorageClass: efs-sc

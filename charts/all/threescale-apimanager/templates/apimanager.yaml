@@ -1,0 +1,27 @@
+apiVersion: apps.3scale.net/v1alpha1
+kind: APIManager
+metadata:
+  name: apimanager
+  namespace: 3scale
+  labels:
+    app.kubernetes.io/name: apimanager
+    app.kubernetes.io/part-of: 3scale
+spec:
+  wildcardDomain: {{ .Values.global.localClusterDomain | default "apps.example.com" | quote }}
+  resourceRequirementsEnabled: true
+  {{- if or .Values.threescale.externalComponents.system.database .Values.threescale.externalComponents.system.redis .Values.threescale.externalComponents.backend.redis }}
+  externalComponents:
+    system:
+      database: {{ .Values.threescale.externalComponents.system.database }}
+      redis: {{ .Values.threescale.externalComponents.system.redis }}
+    backend:
+      redis: {{ .Values.threescale.externalComponents.backend.redis }}
+  {{- end }}
+  system:
+    {{- if not .Values.threescale.externalComponents.system.database }}
+    database:
+      postgresql: {}
+    {{- end }}
+    fileStorage:
+      persistentVolumeClaim:
+        storageClassName: {{ required "set threescale.storage.systemStorageClass in the scenario values file" .Values.threescale.storage.systemStorageClass | quote }}

@@ -46,7 +46,7 @@ Symptoms: operator 2.16 installs but the instance upgrade never completes; versi
 
 ## GitOps rollback trap (Redis)
 
-If Argo CD or RHACM still points `redis-config.path` at `kustomize/bases/redis-config-restore`, `selfHeal: true` reverts persist mode after cutover. A pod restart can **drop Redis data**. Switch to `redis-config-persist` before you treat the migration as done. See [GitOps pitfalls](gitops.md#gitops-pitfalls) and [Day 2 operations](day-2.md).
+If the Pattern stays on `values-cutover.yaml`, a pod restart can **drop Redis data**. Switch `extraValueFiles` to `/values-216-external.yaml` before you treat the migration as done. See [GitOps pitfalls](gitops.md#gitops-pitfalls) and [Day 2 operations](day-2.md).
 
 ## Next steps
 

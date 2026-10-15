@@ -16,6 +16,9 @@ Product matrix: [Supported Configurations](https://access.redhat.com/articles/27
 | **3scale target** | 2.16.4 — CSV `0.13.4`, channel `threescale-2.16` |
 | **PostgreSQL** | 15 — `registry.redhat.io/rhel9/postgresql-15` |
 | **Redis** | 7 — `registry.redhat.io/rhel9/redis-7` (system + backend) |
+| **Install path** | Validated Pattern. Digests in `values-global.yaml`. See [Pin image digests](image-digests.md). |
+
+A single-node OpenShift 4.21 install that uses `values-216-singlenode.yaml` is a direct 2.16 install. It is not this 2.15 migration. That scenario uses `gp3-csi` for `system-storage` because the node count is one.
 
 ## Storage
 

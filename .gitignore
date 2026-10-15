@@ -1,6 +1,7 @@
 *.backup
 *.rdb
 *-secret.yaml
+values-secret.yaml
 *.pem
 .env
 /tmp/

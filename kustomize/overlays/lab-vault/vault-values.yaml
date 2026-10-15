@@ -1,0 +1,5 @@
+# Edit REPLACE_APPS_DOMAIN before helm install. Example: apps.cluster.example.com
+# Chart: hashicorp-vault 0.1.10 from https://charts.validatedpatterns.io
+global:
+  openshift: true
+  localClusterDomain: REPLACE_APPS_DOMAIN

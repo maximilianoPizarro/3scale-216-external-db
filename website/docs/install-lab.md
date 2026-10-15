@@ -13,6 +13,8 @@ oc -n 3scale get csv,subscription,pods
 
 Wait for CSV `Succeeded` and pod `threescale-operator-controller-manager-v2`.
 
+Install Vault and External Secrets before you externalize the databases: [Vault and External Secrets](vault-external-secrets.md).
+
 Catalog: `redhat-operators` / `openshift-marketplace`. On disconnected clusters, change `spec.source` on the Subscription.
 
 ## 2. Provide RWX volume for `system-storage`

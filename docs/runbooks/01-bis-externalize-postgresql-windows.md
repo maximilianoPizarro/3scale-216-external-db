@@ -58,19 +58,13 @@ oc cp "${POSTGRES_POD}:/tmp/db_dump.backup" ./db_dump.backup
 
 ## 3. Desplegar PostgreSQL 15
 
-Copiar credenciales al namespace de BDD y aplicar el overlay (o el ApplicationSet):
+El ExternalSecret `system-database` en `3scale-db` escribe las credenciales desde Vault. Ver `website/docs/vault-external-secrets.es.md`. Esperar `SecretSynced`. No crear el Secret con `oc create secret`.
 
 ```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create namespace "$DB_NAMESPACE" --dry-run=client -o yaml | oc apply -f -
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n "$DB_NAMESPACE"
+oc get externalsecret system-database -n "$DB_NAMESPACE"
 ```
 
-Si `base64 -d` falla, usar `base64 --decode`. Comprobar que el secret en `3scale-db` no tiene `DB_USER` / `DB_PASSWORD` vacíos antes de que el pod inicialice el PVC.
+Comprobar que el Secret en `3scale-db` no tiene `DB_USER` / `DB_PASSWORD` vacíos antes de que el pod inicialice el PVC.
 
 Desplegar **solo** PostgreSQL 15 (no el overlay `lab` completo: ese también crea Redis 7 y deja el dump de Redis embebido para más tarde):
 
@@ -110,9 +104,7 @@ oc exec -n "$DB_NAMESPACE" "$PG15_POD" -- bash -c \
 ## 5. Secret y APIManager
 
 ```bash
-oc get secret system-database -n "$THREESCALE_NAMESPACE" -o yaml > system-database-secret.yaml
-DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@system-postgresql-service.${DB_NAMESPACE}.svc.cluster.local/system"
-oc patch secret system-database -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$DB_URL\"}}"
+oc apply -k kustomize/overlays/lab-vault-components
 APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
 oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"system": {"database": true}}}}'

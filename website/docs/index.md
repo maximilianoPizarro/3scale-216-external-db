@@ -14,6 +14,7 @@ A lab cutover typically takes **a few hours** once the cluster and RWX storage a
 | Area | Location in the repo |
 |------|----------------------|
 | Kustomize bases and overlays | `kustomize/` |
+| Vault chart and External Secrets Subscription | `kustomize/overlays/lab-vault*` |
 | Operational runbooks (clone-friendly) | `docs/runbooks/` (ES), `docs/runbooks/en/` (EN) |
 | OpenShift GitOps / Argo CD | `gitops/` |
 | RHACM hub patterns | `gitops/rhacm/` |
@@ -23,8 +24,9 @@ A lab cutover typically takes **a few hours** once the cluster and RWX storage a
 1. [Why this repo](why.md)
 2. [Prerequisites](prerequisites.md)
 3. [Official Red Hat documentation](official-docs.md)
-4. [Migration sequence](sequence.md)
-5. [Tested versions](tested-versions.md)
-6. [Day 2 operations](day-2.md) (after the cutover)
+4. [Vault and External Secrets](vault-external-secrets.md)
+5. [Migration sequence](sequence.md)
+6. [Tested versions](tested-versions.md)
+7. [Day 2 operations](day-2.md) (after the cutover)
 
 Command examples on this site assume **Linux (bash)**. For **Git Bash on Windows**, use `docs/runbooks/01-bis-externalize-postgresql-windows.md` and `docs/runbooks/02-bis-externalize-redis-windows.md` in the repository.

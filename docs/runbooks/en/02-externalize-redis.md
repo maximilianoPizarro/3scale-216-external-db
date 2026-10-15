@@ -75,13 +75,7 @@ Restart Redis Deployments. Confirm the ConfigMap no longer has `save ""` and `ap
 ## 6. Secrets and APIManager
 
 ```bash
-oc get secret system-redis -n "$THREESCALE_NAMESPACE" -o yaml > system-redis-secret.yaml
-oc get secret backend-redis -n "$THREESCALE_NAMESPACE" -o yaml > backend-redis-secret.yaml
-BACKEND_REDIS_URL="redis://backend-redis-service.${REDIS_NAMESPACE}.svc.cluster.local:6379"
-oc patch secret backend-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"REDIS_STORAGE_URL\":\"$BACKEND_REDIS_URL/0\"}}"
-oc patch secret backend-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"REDIS_QUEUES_URL\":\"$BACKEND_REDIS_URL/1\"}}"
-SYSTEM_REDIS_URL="redis://system-redis-service.${REDIS_NAMESPACE}.svc.cluster.local:6379/1"
-oc patch secret system-redis -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$SYSTEM_REDIS_URL\"}}"
+oc apply -k kustomize/overlays/lab-vault-redis
 APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
 oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"system": {"redis": true}}}}'

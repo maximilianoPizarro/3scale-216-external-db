@@ -32,18 +32,14 @@ oc cp "$POSTGRES_POD":/tmp/db_dump.backup ./db_dump.backup
 
 ## 3. Deploy PostgreSQL 15
 
+ExternalSecret `system-database` in `3scale-db` writes `DB_USER` and `DB_PASSWORD` from Vault. Complete [Vault and External Secrets](vault-external-secrets.md) first and wait until that ExternalSecret is `SecretSynced`. Do not create the Secret with `oc create secret`.
+
 ```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create namespace "$DB_NAMESPACE" --dry-run=client -o yaml | oc apply -f -
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n "$DB_NAMESPACE"
+oc get externalsecret system-database -n "$DB_NAMESPACE"
 oc apply -k kustomize/bases/postgresql -n "$DB_NAMESPACE"
 ```
 
-Confirm `DB_USER` and `DB_PASSWORD` are not empty before the pod initializes the PVC.
+Confirm the Secret keys are not empty before the pod initializes the PVC.
 
 Deploy **only** PostgreSQL 15 first. Do not apply the full `lab` overlay yet. That overlay also creates Redis 7. Wait for `system-postgresql-external` at `1/1`.
 
@@ -66,16 +62,16 @@ oc rsh -n "$DB_NAMESPACE" "$(oc get pods -n "$DB_NAMESPACE" -l deployment=system
   psql -U postgres -d system -c 'GRANT USAGE, CREATE ON SCHEMA public TO system; ALTER SCHEMA public OWNER TO system;'
 ```
 
-## 5. Patch the secret and the APIManager
+## 5. Connection secret and the APIManager
 
 ```bash
-oc get secret system-database -n "$THREESCALE_NAMESPACE" -o yaml > system-database-secret.yaml
-DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@system-postgresql-service.${DB_NAMESPACE}.svc.cluster.local/system"
-oc patch secret system-database -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$DB_URL\"}}"
+oc apply -k kustomize/overlays/lab-vault-components
 APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
 oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"system": {"database": true}}}}'
 ```
+
+The ExternalSecret writes `URL` with `mergePolicy: Merge`. Do not patch that Secret by hand.
 
 This disconnects the 3scale operator from the embedded PostgreSQL Deployment and PVC.
 

@@ -70,6 +70,7 @@ oc apply -k gitops/rhacm/external-db   # overlay prod → 3scale-db en managed c
 
 ```bash
 oc apply -k kustomize/overlays/lab-operator
+oc apply -k kustomize/overlays/lab-vault-operator
 oc apply -k kustomize/overlays/lab-efs
 oc apply -k kustomize/overlays/lab-apimanager
 # más tarde:

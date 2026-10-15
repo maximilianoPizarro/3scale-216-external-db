@@ -65,6 +65,7 @@ plugins:
             Tested versions: Versiones probadas
             Migration sequence: Secuencia de migración
             Install 3scale 2.15 (lab): Instalar 3scale 2.15 (lab)
+            Vault and External Secrets: Vault y External Secrets
             Externalize PostgreSQL: Externalizar PostgreSQL
             Externalize Redis: Externalizar Redis
             Upgrade operator to 2.16: Actualizar operador a 2.16
@@ -81,6 +82,7 @@ nav:
   - Tested versions: tested-versions.md
   - Migration sequence: sequence.md
   - Install 3scale 2.15 (lab): install-lab.md
+  - Vault and External Secrets: vault-external-secrets.md
   - Externalize PostgreSQL: externalize-postgresql.md
   - Externalize Redis: externalize-redis.md
   - Upgrade operator to 2.16: upgrade-216.md

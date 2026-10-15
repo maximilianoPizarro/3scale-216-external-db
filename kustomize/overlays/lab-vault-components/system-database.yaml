@@ -1,0 +1,29 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: system-database
+  namespace: 3scale
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    name: system-database
+    creationPolicy: Owner
+    template:
+      engineVersion: v2
+      mergePolicy: Merge
+      data:
+        DB_USER: "{{ .username }}"
+        DB_PASSWORD: "{{ .password }}"
+        URL: "postgresql://{{ .username }}:{{ .password | urlquery }}@system-postgresql-service.3scale-db.svc.cluster.local/system"
+  data:
+    - secretKey: username
+      remoteRef:
+        key: secret/data/hub/3scale-postgresql
+        property: username
+    - secretKey: password
+      remoteRef:
+        key: secret/data/hub/3scale-postgresql
+        property: password

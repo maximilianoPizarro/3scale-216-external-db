@@ -1,5 +1,7 @@
 # Kustomize: bases de datos in-cluster para 3scale 2.16
 
+Estos overlays no se aplican en un cluster que ya gestiona el Validated Pattern. Comparten los namespaces `vault`, `external-secrets`, `3scale` y `3scale-db`.
+
 En 3scale 2.16, PostgreSQL (system) y Redis (system y backend) ya no son gestionados por el operador. Estos manifiestos despliegan esas instancias **dentro del cluster**, fuera del reconcile del `APIManager`.
 
 Imágenes de referencia (anclar digest en cada entorno):
@@ -11,6 +13,8 @@ Imágenes de referencia (anclar digest en cada entorno):
 
 ```bash
 oc apply -k kustomize/overlays/lab-operator
+oc apply -k kustomize/overlays/lab-vault-operator
+# Helm: hashicorp-vault 0.1.10. Ver website/docs/vault-external-secrets.es.md
 oc apply -k kustomize/overlays/lab-efs          # RWX (EFS); fileSystemId en el overlay
 oc apply -k kustomize/overlays/lab-apimanager   # wildcardDomain + efs-sc
 oc apply -k kustomize/overlays/operator-216     # solo después de externalizar
@@ -20,6 +24,10 @@ oc apply -k kustomize/overlays/operator-216     # solo después de externalizar
 
 | Overlay | Uso |
 |---------|-----|
+| `overlays/lab-vault-operator` | Subscription de External Secrets (`stable-v1`) |
+| `overlays/lab-vault` | ClusterSecretStore y Secret de PostgreSQL en `3scale-db` |
+| `overlays/lab-vault-components` | URL de PostgreSQL en el namespace `3scale` |
+| `overlays/lab-vault-redis` | Secrets de Redis al externalizar Redis |
 | `overlays/lab` | Laboratorio AWS de ejemplo (`gp3-csi`), Redis en modo restore |
 | `overlays/lab-persist` | Mismo lab, Redis con `save` y AOF |
 | `overlays/prod` | Destino genérico; usa la StorageClass por defecto del cluster |
@@ -44,15 +52,6 @@ Ajustar `storage` de los PVC y los `resources` de Redis copiando los valores rea
 
 ## Secret PostgreSQL
 
-En el namespace de las BDD (`3scale-db`):
-
-```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n 3scale-db
-```
+Lo escribe el ExternalSecret `system-database` en `3scale-db` desde Vault. No crearlo con `oc create secret`. Procedimiento: `website/docs/vault-external-secrets.es.md`.
 
 El procedimiento de dump, restore y `externalComponents` está en `docs/runbooks/`.

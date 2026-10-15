@@ -58,19 +58,13 @@ oc cp "${POSTGRES_POD}:/tmp/db_dump.backup" ./db_dump.backup
 
 ## 3. Deploy PostgreSQL 15
 
-Copy credentials to the database namespace and apply the overlay (or the ApplicationSet):
+ExternalSecret `system-database` in `3scale-db` writes the credentials from Vault. See `website/docs/vault-external-secrets.md`. Wait for `SecretSynced`. Do not create the Secret with `oc create secret`.
 
 ```bash
-DB_USER=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_USER}' | base64 -d)
-DB_PASSWORD=$(oc get secret system-database -n "$THREESCALE_NAMESPACE" -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-oc create namespace "$DB_NAMESPACE" --dry-run=client -o yaml | oc apply -f -
-oc create secret generic system-database \
-  --from-literal=DB_USER="$DB_USER" \
-  --from-literal=DB_PASSWORD="$DB_PASSWORD" \
-  -n "$DB_NAMESPACE"
+oc get externalsecret system-database -n "$DB_NAMESPACE"
 ```
 
-If `base64 -d` fails, use `base64 --decode`. Confirm the secret in `3scale-db` does not have empty `DB_USER` / `DB_PASSWORD` before the pod initializes the PVC.
+Confirm the Secret in `3scale-db` does not have empty `DB_USER` / `DB_PASSWORD` before the pod initializes the PVC.
 
 Deploy **only** PostgreSQL 15 (not the full `lab` overlay: that also creates Redis 7 and leaves the Redis dump for later):
 
@@ -110,9 +104,7 @@ oc exec -n "$DB_NAMESPACE" "$PG15_POD" -- bash -c \
 ## 5. Secret and APIManager
 
 ```bash
-oc get secret system-database -n "$THREESCALE_NAMESPACE" -o yaml > system-database-secret.yaml
-DB_URL="postgresql://${DB_USER}:${DB_PASSWORD}@system-postgresql-service.${DB_NAMESPACE}.svc.cluster.local/system"
-oc patch secret system-database -n "$THREESCALE_NAMESPACE" -p "{\"stringData\":{\"URL\":\"$DB_URL\"}}"
+oc apply -k kustomize/overlays/lab-vault-components
 APIMANAGER_NAME=$(oc get apimanager -n "$THREESCALE_NAMESPACE" -o jsonpath='{.items[0].metadata.name}')
 oc patch apimanager "$APIMANAGER_NAME" -n "$THREESCALE_NAMESPACE" --type=merge \
   -p '{"spec": {"externalComponents": {"system": {"database": true}}}}'

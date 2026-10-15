@@ -54,7 +54,7 @@ O cambiar en GitOps `redis-config.path` a `kustomize/bases/redis-config-persist`
 
 ## 6. Parchear secrets y el APIManager
 
-Parchear los secrets `system-redis` y `backend-redis` con las URLs de los servicios externos. Luego marcar `externalComponents` para ambas instancias Redis en el APIManager. Subir todos los componentes.
+Aplicar `kustomize/overlays/lab-vault-redis`. Eso escribe las URLs de los servicios externos. Luego marcar `externalComponents` para ambas instancias Redis en el APIManager. Subir todos los componentes.
 
 !!! tip "Capturar réplicas antes del scale-down"
     Si las variables de réplicas se capturaron **después** del scale-down, pueden ser `0`. Usar `--replicas=1` explícito (o el conteo original) al escalar.

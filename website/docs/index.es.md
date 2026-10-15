@@ -14,6 +14,7 @@ Un corte de laboratorio suele llevar **unas pocas horas** cuando el cluster y el
 | Área | Ubicación en el repo |
 |------|----------------------|
 | Bases y overlays Kustomize | `kustomize/` |
+| Chart de Vault y Subscription de External Secrets | `kustomize/overlays/lab-vault*` |
 | Runbooks operativos (para clonar) | `docs/runbooks/` (ES), `docs/runbooks/en/` (EN) |
 | OpenShift GitOps / Argo CD | `gitops/` |
 | Patrones RHACM (hub) | `gitops/rhacm/` |
@@ -23,8 +24,9 @@ Un corte de laboratorio suele llevar **unas pocas horas** cuando el cluster y el
 1. [Motivación](why.es.md)
 2. [Requisitos previos](prerequisites.es.md)
 3. [Documentación oficial de Red Hat](official-docs.es.md)
-4. [Secuencia de migración](sequence.es.md)
-5. [Versiones probadas](tested-versions.es.md)
-6. [Operación día 2](day-2.es.md) (después del cutover)
+4. [Vault y External Secrets](vault-external-secrets.es.md)
+5. [Secuencia de migración](sequence.es.md)
+6. [Versiones probadas](tested-versions.es.md)
+7. [Operación día 2](day-2.es.md) (después del cutover)
 
 Los comandos de este sitio asumen **Linux (bash)**. Para **Git Bash en Windows**, usar `docs/runbooks/01-bis-externalize-postgresql-windows.md` y `docs/runbooks/02-bis-externalize-redis-windows.md` en el repositorio.

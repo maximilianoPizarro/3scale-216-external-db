@@ -1,0 +1,22 @@
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: system-database
+  namespace: 3scale-db
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    kind: ClusterSecretStore
+    name: vault-backend
+  target:
+    name: system-database
+    creationPolicy: Owner
+  data:
+    - secretKey: DB_USER
+      remoteRef:
+        key: secret/data/hub/3scale-postgresql
+        property: username
+    - secretKey: DB_PASSWORD
+      remoteRef:
+        key: secret/data/hub/3scale-postgresql
+        property: password

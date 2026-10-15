@@ -10,18 +10,16 @@ The `hashicorp-vault` chart installs Vault. External Secrets copies KV fields in
 
 ## Log in
 
-`make install` writes `pattern-vault.init` (gitignored). Do not paste the output into git.
+The root token is in Secret `vaultkeys` in namespace `imperative`. Do not paste the output into git.
 
 ```bash
 export VAULT_ADDR="https://$(oc get route -n vault vault -o jsonpath='{.spec.host}')"
-export VAULT_TOKEN="$(awk '/^root_token:/ {print $2}' pattern-vault.init)"
+export VAULT_TOKEN="$(oc get secret vaultkeys -n imperative -o go-template='{{index .data "vault_data_json"}}' | base64 -d | python -c 'import json,sys; print(json.load(sys.stdin)["root_token"])')"
 vault login "$VAULT_TOKEN"
 vault kv get secret/hub/3scale-postgresql
 vault kv get secret/hub/3scale-system-redis
 vault kv get secret/hub/3scale-backend-redis
 ```
-
-If `pattern-vault.init` is absent, `oc get secret -n vault` lists the Secret the chart created. Use that root token.
 
 ## PostgreSQL
 

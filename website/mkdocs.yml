@@ -108,6 +108,9 @@ markdown_extensions:
       permalink: true
 
 extra:
+  version:
+    provider: mike
+    default: validated-pattern
   generator: false
   social:
     - icon: fontawesome/brands/github

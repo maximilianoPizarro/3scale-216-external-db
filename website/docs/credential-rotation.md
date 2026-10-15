@@ -10,11 +10,11 @@ Vault is installed by the `hashicorp-vault` chart. External Secrets copies the K
 
 ## Log in and read the secrets
 
-The Vault route host is `vault-vault.<apps-domain>`. `make install` writes `pattern-vault.init` in the repository directory (gitignored). Do not paste the command output into git or into this site.
+The Vault route host is `vault-vault.<apps-domain>`. The root token is in Secret `vaultkeys` in namespace `imperative`, field `vault_data_json`. Do not paste the command output into git or into this site.
 
 ```bash
 export VAULT_ADDR="https://$(oc get route -n vault vault -o jsonpath='{.spec.host}')"
-export VAULT_TOKEN="$(awk '/^root_token:/ {print $2}' pattern-vault.init)"
+export VAULT_TOKEN="$(oc get secret vaultkeys -n imperative -o go-template='{{index .data "vault_data_json"}}' | base64 -d | python -c 'import json,sys; print(json.load(sys.stdin)["root_token"])')"
 vault login "$VAULT_TOKEN"
 vault kv get secret/hub/3scale-postgresql
 vault kv get secret/hub/3scale-system-redis
@@ -25,7 +25,7 @@ oc get secret system-redis -n 3scale -o jsonpath='{.data.URL}{"\n"}' | base64 -d
 oc get secret backend-redis -n 3scale -o jsonpath='{.data.REDIS_STORAGE_URL}{"\n"}{.data.REDIS_QUEUES_URL}{"\n"}' | base64 -d; echo
 ```
 
-If `pattern-vault.init` is absent, `oc get secret -n vault` lists the Secret the chart created. Use its root token field as `VAULT_TOKEN`.
+If `./pattern.sh make install` wrote `pattern-vault.init` in the repository directory, `awk '/^root_token:/ {print $2}' pattern-vault.init` is the same token. That file is gitignored.
 
 ## Rotate PostgreSQL
 

@@ -1,5 +1,7 @@
 # Migración 3scale 2.15 → 2.16
 
+Esta página es la guía del **Validated Pattern**. La versión **1.0.0** del selector es la guía anterior: Kustomize y GitOps, sin Pattern CR.
+
 Este repositorio está pensado para **administradores de OpenShift** y **SREs de plataforma** que operan 3scale in-cluster y deben pasar de 2.15 a 2.16. Procedimiento de producto y matriz soportada: [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index).
 
 Sirve para **externalizar** PostgreSQL (system) y Redis (system y backend) **in-cluster** antes de actualizar el operador 3scale a **2.16**. Las bases siguen en OpenShift. El operador 3scale deja de gestionarlas al marcar `externalComponents`.

@@ -1,6 +1,6 @@
 # Upgrade del operador 3scale 2.15 → 2.16
 
-Requisito: system PostgreSQL ≥ 15.0 y Redis ≥ 7.2 **ya externalizados** (`externalComponents` en true). Si las versiones no cumplen, el operador 2.16 se instala pero **no** completa el upgrade de la instancia.
+Requisito: system PostgreSQL ≥ 15.0 y Redis ≥ 7.2 **ya externalizados** y verificados en 2.15 (`/values-215-external.yaml`). Si las versiones no cumplen, el operador 2.16 se instala pero **no** completa el upgrade de la instancia.
 
 ## Preflight
 
@@ -15,9 +15,11 @@ oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 
 Tomar un `pg_dump` y los dos `dump.rdb` frescos inmediatamente antes del parche. Este repo fija PostgreSQL 15 porque el preflight exige ≥ 15.0.
 
+OpenShift tiene que estar en la matriz de 2.15 y de 2.16 (hoy: 4.12, 4.14, 4.16–4.20; 4.13 y 4.15 no están). Si la Subscription está en aprobación manual, aprobar cada InstallPlan; el siguiente aparece cuando el anterior se instaló.
+
 ## Canal
 
-El canal `threescale-2.16` sale de `values-216-external.yaml`. El parche cambia `extraValueFiles`. No editar la Subscription a mano. Argo pisa ese cambio. El mismo archivo pone `externalComponents`, auth de Redis y `configMode: persist`.
+El canal `threescale-2.16` sale de `values-216-external.yaml`. El parche cambia `extraValueFiles`. No editar la Subscription a mano. Argo pisa ese cambio. Ese archivo solo cambia el canal: `externalComponents`, auth y `persist` ya vienen de `/values-215-external.yaml`.
 
 ```bash
 oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
@@ -26,7 +28,7 @@ oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
 
 Si el operador está en 0 réplicas, escalar el Deployment que exista en `3scale`. En 0.12 y 0.13 es `threescale-operator-controller-manager-v2`.
 
-Desde que `system-app-pre` termina bien, el rollback es el dump fresco. No hay downgrade de OLM. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde `$HOME/3scale-replicas-before-cutover.json`.
+Desde que `system-app-pre` termina bien, el rollback es el dump fresco. No hay downgrade de OLM. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde `$HOME/3scale-replicas-before-cutover.json`. Tener `backend-listener` en Ready antes de que el Job corra.
 
 Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, escalar `backend-listener` a 1, esperar Ready, borrar el Job `system-app-pre` y anotar `apps.3scale.net/reconcile-now`. Los pods `system-searchd-manticore-reindex` en Error de antes de que `system-app` estuviera arriba se pueden borrar cuando un Job de reindex posterior queda Complete. El título **Access Restricted** del portal de desarrollador es el access code, no una ruta caída.
 
@@ -37,7 +39,9 @@ apps.3scale.net/apimanager-threescale-version: "2.16"
 apps.3scale.net/threescale-operator-version: "0.13.x"
 ```
 
-APIcast operator-based, si aplica, tiene su propio canal 2.16 (capítulo 2 de la guía de migración).
+Si hay un operador de APIcast aparte, su canal también pasa a `threescale-2.16` en otra ventana (capítulo 2 de la guía). El Pattern solo mueve la Subscription de 3scale. La anotación esperada es `apicast.apps.3scale.net/operator-version: "0.13.x"`.
+
+`insecure_skip_verify: "true"` solo si ya existen CR de capacidades (Product, Backend, OpenAPI, Tenant y similares) y el operador falla verificando el certificado. No se aplica al APIManager.
 
 ## Si `system-app-pre` falla con `permission denied for schema public`
 

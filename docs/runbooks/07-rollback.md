@@ -44,7 +44,7 @@ Síntomas: el operador 2.16 se instala pero el upgrade de instancia no completa;
 
 ## Trampa GitOps (Redis)
 
-Si Argo CD o RHACM sigue con `redis-config.path` en `kustomize/bases/redis-config-restore`, `selfHeal: true` revierte el modo persistencia tras el cutover. Un restart del pod puede **borrar datos de Redis**. Pasar a `redis-config-persist` antes de dar por cerrada la migración. Ver [06-day-2.md](06-day-2.md#redis-persistente).
+Si el Pattern sigue en `values-cutover.yaml`, un restart del pod puede **borrar datos de Redis**. Pasar `extraValueFiles` a `/values-215-external.yaml` antes de devolver tráfico, y a `/values-216-external.yaml` después de la verificación de 2.15. Ver [06-day-2.md](06-day-2.md#redis-persistente).
 
 ## Próximos pasos
 

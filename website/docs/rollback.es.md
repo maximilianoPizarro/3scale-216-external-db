@@ -46,7 +46,7 @@ Síntomas: el operador 2.16 se instala pero el upgrade de instancia no completa;
 
 ## Trampa GitOps (Redis)
 
-Si el Pattern sigue en `values-cutover.yaml`, un restart del pod puede **borrar datos de Redis**. Pasar `extraValueFiles` a `/values-216-external.yaml` antes de dar por cerrada la migración. Ver [Errores de GitOps](gitops.es.md#errores-de-gitops) y [Operación día 2](day-2.es.md).
+Si el Pattern sigue en `values-cutover.yaml`, un restart del pod puede **borrar datos de Redis**. Pasar `extraValueFiles` a `/values-215-external.yaml` antes de devolver tráfico, y a `/values-216-external.yaml` después de la verificación de 2.15. Ver [Errores de GitOps](gitops.es.md#errores-de-gitops) y [Operación día 2](day-2.es.md).
 
 ## Próximos pasos
 

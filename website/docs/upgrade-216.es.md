@@ -2,7 +2,7 @@
 
 El canal `threescale-2.16` sale de `values-216-external.yaml`. El comando de abajo cambia `extraValueFiles` del Pattern. No edita la Subscription a mano. Argo renderiza la Subscription desde ese archivo y pisa un parche manual del canal.
 
-Correr esta página solo después de los dos ciclos, del smoke test en 2.15 y de un `pg_dump` **fresco** más los dos `dump.rdb`. Ver [Secuencia de migración](sequence.es.md).
+Correr esta página solo después de `/values-215-external.yaml`, de la verificación en 2.15 contra el restore y de un `pg_dump` **fresco** más los dos `dump.rdb`. Ver [Secuencia de migración](sequence.es.md).
 
 ## Preflight, antes del cambio de canal
 
@@ -17,6 +17,8 @@ oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 
 PostgreSQL tiene que ser ≥ 15.0. Redis tiene que ser ≥ 7.2. Este repositorio fija PostgreSQL 15 porque el preflight del operador rechaza una versión anterior.
 
+OpenShift tiene que estar en la matriz de 2.15 y de 2.16 (hoy: 4.12, 4.14, 4.16–4.20; 4.13 y 4.15 no están). Si la Subscription está en aprobación manual, aprobar cada InstallPlan; el siguiente aparece cuando el anterior se instaló.
+
 ## Cambiar el canal
 
 ```bash
@@ -24,7 +26,7 @@ oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
   -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
 ```
 
-Ese archivo también pone `externalComponents`, auth de Redis y `configMode: persist`. ExternalSecret reescribe los Secrets de conexión. No parchear esos Secrets ni el APIManager a mano.
+Ese archivo solo cambia el canal. `externalComponents`, auth de Redis y `configMode: persist` ya vienen de `/values-215-external.yaml`. No parchear esos Secrets ni el APIManager a mano.
 
 Si el Deployment del operador está en 0 réplicas, escalar a 1 el Deployment que exista en el namespace `3scale`. En los CSV 0.12 y 0.13 el nombre es `threescale-operator-controller-manager-v2`. El nombre puede cambiar:
 
@@ -40,7 +42,9 @@ apps.3scale.net/apimanager-threescale-version: "2.16"
 apps.3scale.net/threescale-operator-version: "0.13.x"
 ```
 
-`system-app-pre` corre las migraciones de 2.16 contra la base externa. Desde que ese Job termina bien, las escrituras viven en la base externa. Volver a escalar las bases embebidas pierde esas escrituras. El rollback es un restore del dump fresco. No hay downgrade de OLM.
+Si hay un operador de APIcast aparte, su canal también pasa a `threescale-2.16` en otra ventana (capítulo 2 de la guía). El Pattern solo mueve la Subscription de 3scale. La anotación esperada es `apicast.apps.3scale.net/operator-version: "0.13.x"`.
+
+`system-app-pre` corre las migraciones de 2.16 contra la base externa. Tener `backend-listener` en Ready antes de que el Job corra. Desde que ese Job termina bien, las escrituras viven en la base externa. Volver a escalar las bases embebidas pierde esas escrituras. El rollback es un restore del dump fresco. No hay downgrade de OLM.
 
 Si `system-app-pre` falla con `ECONNREFUSED` a `backend-listener:3000`, el Job arrancó con `backend-listener` todavía en 0 réplicas. Escalar el listener a 1 y esperar a que esté Ready. Después borrar el Job y anotar el APIManager para que el operador lo recree:
 
@@ -54,6 +58,8 @@ oc annotate apimanager apimanager -n 3scale apps.3scale.net/reconcile-now="$(dat
 El operador no sube `system-app` ni `system-sidekiq` desde 0 después del scale-down de mantenimiento. Escalar los dos desde `$HOME/3scale-replicas-before-cutover.json`. El producto sigue caído mientras esos dos estén en 0, aunque el CSV `3scale-operator.v0.13.x` esté Succeeded y los preflights pasen.
 
 Los pods `system-searchd-manticore-reindex` en Error de antes de que `system-app` estuviera arriba se pueden borrar cuando un Job de reindex posterior queda Complete. La página del portal de desarrollador titulada **Access Restricted**, con un formulario que postea a `/access_code`, es el access code del portal. La ruta está arriba.
+
+`insecure_skip_verify: "true"` solo si ya existen CR de capacidades (Product, Backend, OpenAPI, Tenant y similares) y el operador falla verificando el certificado. No se aplica al APIManager.
 
 ## Si `system-app-pre` falla: `permission denied for schema public`
 

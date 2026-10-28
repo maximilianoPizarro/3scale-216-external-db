@@ -1,7 +1,8 @@
-# Steady state after the PostgreSQL and Redis cutover.
+# Steady state after 2.15 already reads the external databases.
+# This file only switches the channel to threescale-2.16.
+# Point extraValueFiles here after the fresh dump and the 2.15 verification on the restore.
+# values-215-external.yaml is the step before this one.
 # Keep the ReadWriteMany class used for system-storage. Do not switch it to gp3-csi.
-# Pattern CR: point extraValueFiles at this file after restore and portal checks.
-# values-cutover.yaml is the step before this one. It keeps channel 2.15 and does not publish URLs into namespace 3scale.
 # Child Applications only inherit files listed in global.extraValueFiles.
 global:
   extraValueFiles:

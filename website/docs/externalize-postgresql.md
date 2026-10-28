@@ -4,6 +4,10 @@ This page is the same procedure as `docs/runbooks/01-externalize-postgresql.md`.
 
 GitOps writes the connection Secret. Do not `oc patch` `system-database` or the APIManager. Argo overwrites that patch. Copy the embedded user and password into Vault (`secret/hub/3scale-postgresql`). ExternalSecret renders the URL with `urlquery`, so the password does not land in shell history.
 
+Before the first scale-down, record account, service, and application counts from the portal or API. Copy PVC size and requests/limits from the running embedded Deployments (`system-postgresql`, `system-redis`, `backend-redis`). Set them in `threescale.storage.databaseSize` and `threescale.resources` before the first `/values-cutover.yaml` sync. Do not copy the guide example 1Gi or the 32Gi Redis limit. During the window one extra PostgreSQL and two Redis instances coexist; the embedded PVCs still occupy disk.
+
+`system-storage` is not in the dump. Zync stays internal: `zync-database` returns to 1 when replicas are restored.
+
 ## Variables
 
 ```bash
@@ -49,7 +53,7 @@ Record the checksum and the size. After every later `oc cp`, run `sha256sum` aga
 
 ## 3. Deploy PostgreSQL 15
 
-Set Pattern `extraValueFiles` to `/values-cutover.yaml`. That file enables chart `external-db` and leaves `externalComponents` false. Wait for `system-postgresql-external` at `1/1`. The same chart starts Redis 7 in `configMode: restore`. Load `dump.rdb` in the Redis procedure before `/values-216-external.yaml`.
+Set Pattern `extraValueFiles` to `/values-cutover.yaml`. That file enables chart `external-db` and leaves `externalComponents` false. Wait for `system-postgresql-external` at `1/1`. The same chart starts Redis 7 in `configMode: restore`. Load `dump.rdb` in the Redis procedure before `/values-215-external.yaml`.
 
 A NetworkPolicy in the chart allows TCP 5432 and 6379 only from namespaces `3scale` and `3scale-db`.
 
@@ -80,15 +84,15 @@ Compare `n_live_tup` with the same query on the embedded database. `ANALYZE` mus
 
 ## 5. Point 3scale at the external database
 
-Stay on `/values-cutover.yaml` until the Redis cycle finishes. The Secrets in namespace `3scale` still point at the embedded databases. After Redis is loaded, `/values-216-external.yaml` sets `externalComponents` and ExternalSecret rewrites the URLs. Do not patch them by hand in between.
+Stay on `/values-cutover.yaml` until the Redis cycle finishes. The Secrets in namespace `3scale` still point at the embedded databases. After Redis is loaded and `BGREWRITEAOF` finishes, `/values-215-external.yaml` sets `externalComponents` and ExternalSecret rewrites the URLs. Do not patch them by hand in between. Channel `threescale-2.16` is the next file.
 
 ## 6. Scale the application back
 
 Restore replica counts from `$HOME/3scale-replicas-before-cutover.json`. The 3scale operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Scale embedded Redis back to its previous count so the Redis cycle can dump it.
 
-Scale embedded `system-postgresql` to 0. **Keep** its Deployment, Service, and PVC until the 2.16 upgrade has been accepted. Deleting them removes the rollback path.
+Scale embedded `system-postgresql` to 0. **Keep** its Deployment, Service, and PVC until `system-app-pre` succeeds on 2.16. The official guide deletes those resources at the end of the chapter; this procedure does not. Deleting them removes the rollback path until that job.
 
-Then run the Redis cycle. The smoke test (admin login, create and read an account, one APIcast call, Sidekiq not stuck) happens after both cycles, still on channel `threescale-2.15`.
+Then run the Redis cycle. The 2.15 verification against the restore (Admin Portal, Developer Portal, new account, APIcast, historical analytics chart) is after `/values-215-external.yaml`.
 
 !!! danger "Do not commit secrets or dumps"
     Never commit `*-secret.yaml`, `*.backup`, or `*.rdb` files.

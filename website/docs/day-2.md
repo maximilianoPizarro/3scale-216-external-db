@@ -5,15 +5,15 @@ After you set `externalComponents`, the **3scale operator** still manages `syste
 Clone-friendly copy: `docs/runbooks/06-day-2.md`. Short reference: `docs/runbooks/04-ops-logs-persistencia-imagenes.md`.
 
 !!! danger "Redis must stay in persist mode"
-    Cutover uses `save ""` and `appendonly no` so Redis can load `dump.rdb` (`threescale.redis.configMode: restore` in `values-cutover.yaml`). In steady state the ConfigMap must come from `configMode: persist` in `values-216-external.yaml` (`save` + `appendonly yes`).
+    Cutover uses `save ""` and `appendonly no` so Redis can load `dump.rdb` (`threescale.redis.configMode: restore` in `values-cutover.yaml`). Before returning traffic, `configMode: persist` comes from `values-215-external.yaml` (`save` + `appendonly yes`). `values-216-external.yaml` only switches the channel.
     If the Pattern stays on `values-cutover.yaml`, a restart **drops data**.
 
 ## Steady-state checklist
 
 - [ ] Redis ConfigMap has `save` entries and `appendonly yes` (not `save ""`)
-- [ ] Pattern `extraValueFiles` is `/values-216-external.yaml` (`threescale.redis.configMode: persist`)
+- [ ] Pattern `extraValueFiles` is `/values-215-external.yaml` or `/values-216-external.yaml` (`threescale.redis.configMode: persist`)
 - [ ] Image digests are pinned (PostgreSQL 15 and Redis 7), not floating tags
-- [ ] PVC size and `resources` match the 2.15 workload (lab values are examples)
+- [ ] PVC size and `resources` match the 2.15 workload (lab values are examples; do not copy the guide 32Gi Redis limit)
 - [ ] `threescale.backup.enabled` is a choice. The chart ships a CronJob for `pg_dump` and `redis-cli SAVE` onto PVC `external-db-backup`, and that CronJob stays off (`enabled: false`)
 - [ ] A VolumeSnapshot of a live database PVC is crash-consistent. EFS CSI does not implement VolumeSnapshot, so `system-storage` uses AWS Backup or a file copy
 - [ ] Secrets `system-database`, `system-redis`, and `backend-redis` are backed up from namespace `3scale` **and** `system-database` from `3scale-db`
@@ -42,7 +42,7 @@ oc -n 3scale-db get configmap redis-config-external -o yaml | grep -E 'save |app
 
 Expect `save 900 1` (and the other `save` lines) and `appendonly yes`. Do **not** leave `save ""` or `appendonly no` after cutover.
 
-Set `threescale.redis.configMode` to `persist` (`values-216-external.yaml`) and let the Pattern sync, then restart:
+`threescale.redis.configMode: persist` arrives with `values-215-external.yaml` and stays in `values-216-external.yaml`. Let the Pattern sync, then restart:
 
 ```bash
 oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/system-redis-external
@@ -105,7 +105,7 @@ Rollback before `system-app-pre` succeeds on 2.16: [Rollback](rollback.md). Afte
 
 | Risk | What to do |
 |------|------------|
-| Pattern still on `values-cutover.yaml` | Switch `extraValueFiles` to `/values-216-external.yaml` after cutover. |
+| Pattern still on `values-cutover.yaml` | Switch `extraValueFiles` to `/values-215-external.yaml` before returning traffic, then to `/values-216-external.yaml` after the 2.15 verification. |
 | `prune: true` | Keep global `prune: false`. The external database PVCs also carry `argocd.argoproj.io/sync-options: Prune=false`. Annotate PVC `system-storage` the same way after the operator creates it. |
 | Mixing in-cluster GitOps and RHACM | Use one controller per destination. See [GitOps and RHACM](gitops.md). |
 

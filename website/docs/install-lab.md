@@ -36,6 +36,6 @@ The local PV is `ReadWriteOnce` and pins pods to that node. It is not a multi-no
 
 On the single-node 4.21 scenario the same recreate applies to `gp3-csi`: delete the Pending RWX PVC and create it again as `ReadWriteOnce`, size `100Mi`, class `gp3-csi`, with the APIManager `ownerReference`.
 
-## 3. Switch the value file only after externalization
+## 3. Switch the value files after each cutover step
 
-Change `spec.extraValueFiles` from `/values-cutover.yaml` to `/values-216-external.yaml` after the fresh dump and the 2.15 smoke test. That file sets channel `threescale-2.16`. Leave `systemStorageClass` on `efs-sc` for the migration scenario.
+Change `spec.extraValueFiles` from `/values-cutover.yaml` to `/values-215-external.yaml` after RDB load and `BGREWRITEAOF`, before returning traffic on 2.15. After the fresh dump and the 2.15 verification, change it to `/values-216-external.yaml`. That last file only sets channel `threescale-2.16`. Leave `systemStorageClass` on `efs-sc` for the migration scenario.

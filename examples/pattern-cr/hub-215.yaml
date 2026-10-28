@@ -1,7 +1,8 @@
 # Migration cluster: 3scale 2.15 with embedded databases.
 # Requires OperatorHub channel threescale-2.15 and a ReadWriteMany StorageClass (values-215.yaml).
 # During the window, change extraValueFiles to /values-cutover.yaml.
-# After restore and portal checks, change it to /values-216-external.yaml.
+# After RDB load and BGREWRITEAOF, change it to /values-215-external.yaml (2.15 on external DBs).
+# After the fresh dump and 2.15 verification, change it to /values-216-external.yaml (channel only).
 apiVersion: gitops.hybrid-cloud-patterns.io/v1alpha1
 kind: Pattern
 metadata:

@@ -6,7 +6,7 @@ Usar las mismas variables que [Externalizar PostgreSQL](externalize-postgresql.e
 
 `values-cutover.yaml` es el único archivo que pone `threescale.redis.allowRestore: true`. El chart rechaza `configMode: restore` sin esa bandera. El modo restore escribe `save ""` y `appendonly no`. Un restart no reconstruye los datos si `dump.rdb` no se cargó. Los otros values no pueden caer en restore por omisión.
 
-Redis no tiene contraseña mientras carga el RDB. La auth entra con `/values-216-external.yaml`, después de la carga y del smoke test. La NetworkPolicy del cutover ya limita el puerto 6379 a los namespaces `3scale` y `3scale-db`.
+Redis no tiene contraseña mientras carga el RDB. La auth y `persist` entran con `/values-215-external.yaml`, antes de devolver tráfico. El canal `threescale-2.16` es el archivo siguiente. La NetworkPolicy del cutover ya limita el puerto 6379 a los namespaces `3scale` y `3scale-db`.
 
 No hacer `oc patch` de los Secrets de Redis ni del APIManager. ExternalSecret escribe las URL cuando `externalComponents` pasa a true.
 
@@ -55,23 +55,36 @@ oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
 oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
 ```
 
-Cuando los pods estén Ready, comparar `DBSIZE` con los números del paso 2. Después `BGREWRITEAOF` en cada pod y esperar a que `INFO persistence` muestre `aof_rewrite_in_progress:0`. Volver a leer los nombres de pod después del restart.
+Cuando los pods estén Ready, comparar `DBSIZE` con los números del paso 2. Después `BGREWRITEAOF` en cada pod y esperar a que `INFO persistence` muestre `aof_rewrite_in_progress:0`. Volver a leer los nombres de pod después del restart. Hasta aquí Redis sigue en modo restore (`save ""`, `appendonly no`).
 
-## 4. Volver a escalar, smoke test y dump fresco
+## 4. Persistencia y Secrets antes de devolver tráfico
 
-Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`, salvo `system-postgresql`, `backend-redis` y `system-redis` embebidos, que quedan en 0. Conservar esos PVC. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON.
+Pasar `extraValueFiles` a `/values-215-external.yaml`. Ese archivo pone `configMode: persist`, auth de Redis y `externalComponents`, y deja el canal en `threescale-2.15`. ExternalSecret reescribe las URL. No parchear Secrets ni el APIManager a mano.
 
-En el canal `threescale-2.15`, contra las bases externas:
+El cambio de auth recrea el Deployment. Confirmar `appendonly yes` y el mismo `DBSIZE` en el pod nuevo:
+
+```bash
+oc -n 3scale-db get configmap redis-config-external -o yaml | grep -E 'save |appendonly'
+```
+
+## 5. Verificación en 2.15 y dump fresco
+
+Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`, salvo `system-postgresql`, `backend-redis` y `system-redis` embebidos, que quedan en 0. Conservar esos PVC. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. `zync-database` vuelve a 1.
+
+En el canal `threescale-2.15`, contra las bases restauradas:
 
 - El login del Admin Portal responde bien.
+- El Developer Portal responde.
 - Crear una cuenta y volver a leerla.
 - Una llamada por APIcast devuelve el estado esperado para un producto configurado.
+- El gráfico de analíticas muestra el tráfico histórico (confirma el RDB de `backend-redis`; una llamada nueva solo demuestra escritura).
+- Conteos de cuentas, servicios y aplicaciones frente a la foto previa.
 - Las colas de Sidekiq no quedan atascadas (el pod `system-sidekiq` Ready y el trabajo del portal termina).
 
 Inmediatamente antes de `/values-216-external.yaml`, tomar un `pg_dump` nuevo y un par nuevo de `dump.rdb`. Repetir checksum y `DBSIZE`. Borrar todos los dumps cuando el upgrade esté aceptado.
 
-## 5. Encender persistencia y auth
+## 6. Canal 2.16
 
-`/values-216-external.yaml` pone `configMode: persist`, auth de Redis y `externalComponents`. También es el cambio de canal. Hacerlo solo después del dump fresco y del smoke test. Ver [Actualizar operador a 2.16](upgrade-216.es.md).
+`/values-216-external.yaml` solo cambia el canal a `threescale-2.16`. Las bases ya las lee 2.15. Ver [Actualizar operador a 2.16](upgrade-216.es.md).
 
 Confirmar que el ConfigMap ya no tiene `save ""` y que `appendonly` es `yes`. Un restart en modo restore no reconstruye claves que nunca se cargaron.

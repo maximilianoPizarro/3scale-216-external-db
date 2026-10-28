@@ -46,7 +46,7 @@ Symptoms: operator 2.16 installs but the instance upgrade never completes; versi
 
 ## GitOps rollback trap (Redis)
 
-If the Pattern stays on `values-cutover.yaml`, a pod restart can **drop Redis data**. Switch `extraValueFiles` to `/values-216-external.yaml` before you treat the migration as done. See [GitOps pitfalls](gitops.md#gitops-pitfalls) and [Day 2 operations](day-2.md).
+If the Pattern stays on `values-cutover.yaml`, a pod restart can **drop Redis data**. Switch `extraValueFiles` to `/values-215-external.yaml` before returning traffic, then to `/values-216-external.yaml` after the 2.15 verification. See [GitOps pitfalls](gitops.md#gitops-pitfalls) and [Day 2 operations](day-2.md).
 
 ## Next steps
 

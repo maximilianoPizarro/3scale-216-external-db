@@ -35,8 +35,8 @@ Este repo fija PostgreSQL 15. El preflight del operador exige ≥ 15.0, así que
 
 Para 3scale 2.16, Red Hat documenta:
 
-- OpenShift: 4.14, 4.16–4.19 (4.20+ en micros posteriores de 2.16)
+- OpenShift: 4.12, 4.14, 4.16, 4.17, 4.18, 4.19, 4.20 (4.13 y 4.15 no están)
 - PostgreSQL: 14, 15 (preflight del system DB exige ≥ 15.0)
 - Redis: 7.2 (dos instancias)
 
-Probar en OpenShift 4.19 valida el camino a 2.16 aunque producción use un minor anterior soportado. Actualizar OpenShift **después** de la migración 3scale. No combinar esos upgrades en la misma ventana de mantenimiento.
+Probar en OpenShift 4.19 valida el camino a 2.16 aunque producción use un minor anterior soportado. Actualizar OpenShift **después** de la migración 3scale. No combinar esos upgrades en la misma ventana de mantenimiento. Si la Subscription está en aprobación manual, aprobar cada InstallPlan; el siguiente aparece cuando el anterior se instaló.

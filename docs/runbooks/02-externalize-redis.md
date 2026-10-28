@@ -2,7 +2,7 @@
 
 Procedimiento único, el mismo que `website/docs/externalize-redis.es.md`. En Git Bash: [02-bis-externalize-redis-windows.md](02-bis-externalize-redis-windows.md) solo agrega `MSYS_NO_PATHCONV=1`.
 
-`values-cutover.yaml` es el único archivo con `allowRestore: true`. El chart rechaza `configMode: restore` sin esa bandera. Ese modo deja `save ""` y `appendonly no`: un restart no reconstruye datos si el RDB no se cargó. Redis sigue sin auth solo durante la carga. La auth entra con `/values-216-external.yaml`.
+`values-cutover.yaml` es el único archivo con `allowRestore: true`. El chart rechaza `configMode: restore` sin esa bandera. Ese modo deja `save ""` y `appendonly no`: un restart no reconstruye datos si el RDB no se cargó. Redis sigue sin auth solo durante la carga. La auth y `persist` entran con `/values-215-external.yaml`, antes de devolver tráfico. El canal `threescale-2.16` es el archivo siguiente.
 
 ## 1. Escalar a 0 y dejar Redis embebido arriba
 
@@ -45,20 +45,40 @@ oc rollout restart deployment/backend-redis-external -n "$REDIS_NAMESPACE"
 oc rollout restart deployment/system-redis-external -n "$REDIS_NAMESPACE"
 ```
 
-Comparar `DBSIZE` con el paso 2. Después `BGREWRITEAOF` y esperar `aof_rewrite_in_progress:0`.
+Comparar `DBSIZE` con el paso 2. Después `BGREWRITEAOF` y esperar `aof_rewrite_in_progress:0`. Hasta aquí Redis sigue en modo restore (`save ""`, `appendonly no`).
 
-## 4. Smoke test y dump fresco
+## 4. Persistencia y Secrets antes de devolver tráfico
 
-Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Dejar PostgreSQL y Redis embebidos en 0 y conservar sus PVC.
+Pasar `extraValueFiles` a `/values-215-external.yaml`. Ese archivo pone `configMode: persist`, auth de Redis y `externalComponents`, y deja el canal en `threescale-2.15`. ExternalSecret reescribe las URL. No parchear Secrets ni el APIManager a mano. Argo pisa ese cambio.
 
-En 2.15: login de admin, alta y lectura de una cuenta, una llamada por APIcast, Sidekiq sin atasco.
+El cambio de auth recrea el Deployment. Confirmar `appendonly yes` y el mismo `DBSIZE` en el pod nuevo:
+
+```bash
+oc -n 3scale-db get configmap redis-config-external -o yaml | grep -E 'save |appendonly'
+oc exec -n 3scale-db deploy/backend-redis-external -- redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DBSIZE
+oc exec -n 3scale-db deploy/system-redis-external -- redis-cli -a "$REDIS_PASSWORD" --no-auth-warning DBSIZE
+```
+
+## 5. Verificación en 2.15 y dump fresco
+
+Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Dejar PostgreSQL y Redis embebidos en 0 y conservar sus PVC. `zync-database` vuelve a 1.
+
+En 2.15, contra las bases restauradas:
+
+- Login del Admin Portal.
+- Developer Portal.
+- Alta y lectura de una cuenta.
+- Una llamada por APIcast.
+- Gráfico de analíticas con el tráfico histórico (confirma el RDB de `backend-redis`; una llamada nueva solo demuestra escritura).
+- Conteos de cuentas, servicios y aplicaciones frente a la foto previa.
+- Sidekiq sin atasco.
 
 Inmediatamente antes de `/values-216-external.yaml`, repetir `pg_dump` y los dos `dump.rdb` con checksum y `DBSIZE`.
 
-## 5. Persistencia y auth
+## 6. Canal 2.16
 
-`/values-216-external.yaml` pone `configMode: persist`, auth y `externalComponents`. No parchear Secrets ni el APIManager a mano. Ver [03-upgrade-215-to-216.md](03-upgrade-215-to-216.md).
+`/values-216-external.yaml` solo cambia el canal a `threescale-2.16`. Las bases ya las lee 2.15. Ver [03-upgrade-215-to-216.md](03-upgrade-215-to-216.md).
 
 ## Rollback
 
-Hasta `system-app-pre` en 2.16, escalar el Redis embebido. No borrar sus PVC. Después, restaurar el dump fresco.
+Hasta `system-app-pre` en 2.16, escalar el Redis embebido. No borrar sus PVC. La guía oficial los borra al final del capítulo; aquí no. Después de ese Job, restaurar el dump fresco.

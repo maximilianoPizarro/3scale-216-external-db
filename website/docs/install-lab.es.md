@@ -36,6 +36,6 @@ El PV local es `ReadWriteOnce` y fija los pods a ese nodo. No es una solución d
 
 En el escenario de un nodo en 4.21 el mismo recreado aplica a `gp3-csi`: borrar el PVC RWX Pending y crearlo de nuevo como `ReadWriteOnce`, tamaño `100Mi`, clase `gp3-csi`, con el `ownerReference` del APIManager.
 
-## 3. Cambiar el archivo de values solo después de externalizar
+## 3. Cambiar los archivos de values después de cada paso del corte
 
-Cambiar `spec.extraValueFiles` de `/values-cutover.yaml` a `/values-216-external.yaml` después del dump fresco y del smoke test en 2.15. Ese archivo pone el canal `threescale-2.16`. Dejar `systemStorageClass` en `efs-sc` para el escenario de migración.
+Cambiar `spec.extraValueFiles` de `/values-cutover.yaml` a `/values-215-external.yaml` después de cargar el RDB y `BGREWRITEAOF`, antes de devolver tráfico en 2.15. Tras el dump fresco y la verificación de 2.15, pasarlo a `/values-216-external.yaml`. Ese último archivo solo pone el canal `threescale-2.16`. Dejar `systemStorageClass` en `efs-sc` para el escenario de migración.

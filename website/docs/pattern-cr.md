@@ -7,7 +7,7 @@ Two scenarios. Do not mix their value files.
 | Scenario | Cluster | Pattern CR | What it installs |
 |----------|---------|------------|------------------|
 | Single-node 2.16 | One node, no ReadWriteMany storage | [hub-216-singlenode.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/main/examples/pattern-cr/hub-216-singlenode.yaml) | 3scale channel `threescale-2.16`, external PostgreSQL 15 and Redis 7, Vault, External Secrets. `system-storage` uses `gp3-csi`. Recreate that PVC as ReadWriteOnce. |
-| Migration 2.15 to 2.16 | OpenShift that offers channel `threescale-2.15` and a ReadWriteMany class | [hub-215.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/main/examples/pattern-cr/hub-215.yaml) | 3scale 2.15 with embedded databases. During the window, point `extraValueFiles` at `/values-cutover.yaml`. After the fresh dump and the smoke test, point it at `/values-216-external.yaml`. |
+| Migration 2.15 to 2.16 | OpenShift that offers channel `threescale-2.15` and a ReadWriteMany class | [hub-215.yaml](https://github.com/maximilianoPizarro/3scale-216-external-db/blob/main/examples/pattern-cr/hub-215.yaml) | 3scale 2.15 with embedded databases. During the window, point `extraValueFiles` at `/values-cutover.yaml`, then `/values-215-external.yaml` after RDB load. After the fresh dump and the 2.15 verification, point it at `/values-216-external.yaml` (channel only). |
 
 `targetRevision` in those files is `main`.
 

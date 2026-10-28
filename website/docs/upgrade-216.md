@@ -2,7 +2,7 @@
 
 The channel `threescale-2.16` comes from `values-216-external.yaml`. The command below changes Pattern `extraValueFiles`. It does not edit the Subscription by hand. Argo renders the Subscription from that file and overwrites a manual channel patch.
 
-Run this page only after both cutover cycles, the 2.15 smoke test, and a **fresh** `pg_dump` plus both `dump.rdb` files. See [Migration sequence](sequence.md).
+Run this page only after `/values-215-external.yaml`, the 2.15 verification against the restore, and a **fresh** `pg_dump` plus both `dump.rdb` files. See [Migration sequence](sequence.md).
 
 ## Preflight, before the channel switch
 
@@ -17,6 +17,8 @@ oc exec -n 3scale-db deploy/system-redis-external -- redis-server --version
 
 PostgreSQL must be ≥ 15.0. Redis must be ≥ 7.2. This repository pins PostgreSQL 15 because the operator preflight rejects anything older.
 
+OpenShift must be on the matrix for both 2.15 and 2.16 (today: 4.12, 4.14, 4.16–4.20; 4.13 and 4.15 are not listed). If the Subscription uses manual approval, approve each InstallPlan; the next one appears only after the previous one installed.
+
 ## Switch the channel
 
 ```bash
@@ -24,7 +26,7 @@ oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
   -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
 ```
 
-That file also sets `externalComponents`, Redis auth, and `configMode: persist`. ExternalSecret rewrites the connection Secrets. Do not patch those Secrets or the APIManager yourself.
+That file only switches the channel. `externalComponents`, Redis auth, and `configMode: persist` already come from `/values-215-external.yaml`. Do not patch those Secrets or the APIManager yourself.
 
 If the operator Deployment is at 0 replicas, scale the Deployment that exists in namespace `3scale` back to 1. On CSV 0.12 and 0.13 the name is `threescale-operator-controller-manager-v2`. The name can change:
 
@@ -40,7 +42,9 @@ apps.3scale.net/apimanager-threescale-version: "2.16"
 apps.3scale.net/threescale-operator-version: "0.13.x"
 ```
 
-`system-app-pre` runs 2.16 migrations against the external database. From the moment that job succeeds, writes live on the external database. Scaling the embedded databases back up loses those writes. Rollback is a restore of the fresh dump. There is no OLM downgrade.
+If a separate APIcast operator exists, its channel also moves to `threescale-2.16` in a different window (chapter 2 of the guide). The Pattern only moves the 3scale Subscription. The expected annotation is `apicast.apps.3scale.net/operator-version: "0.13.x"`.
+
+`system-app-pre` runs 2.16 migrations against the external database. Have `backend-listener` Ready before the Job runs. From the moment that job succeeds, writes live on the external database. Scaling the embedded databases back up loses those writes. Rollback is a restore of the fresh dump. There is no OLM downgrade.
 
 If `system-app-pre` fails with `ECONNREFUSED` to `backend-listener:3000`, the job started while `backend-listener` was still at 0 replicas. Scale the listener to 1 and wait until it is Ready. Then delete the Job and annotate the APIManager so the operator recreates it:
 
@@ -54,6 +58,8 @@ oc annotate apimanager apimanager -n 3scale apps.3scale.net/reconcile-now="$(dat
 The operator does not raise `system-app` or `system-sidekiq` from 0 after the maintenance scale-down. Scale both from `$HOME/3scale-replicas-before-cutover.json`. The product stays down while those two are at 0, even when CSV `3scale-operator.v0.13.x` is Succeeded and preflights pass.
 
 Pods `system-searchd-manticore-reindex` in Error from before `system-app` was up can be deleted once a later reindex Job is Complete. The developer portal page titled **Access Restricted**, with a form posting to `/access_code`, is the portal access code. The route is up.
+
+`insecure_skip_verify: "true"` only if capability CRs already exist (Product, Backend, OpenAPI, Tenant, and similar) and the operator fails verifying the certificate. It does not apply to the APIManager.
 
 ## If `system-app-pre` fails: `permission denied for schema public`
 

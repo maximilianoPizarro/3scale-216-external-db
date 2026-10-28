@@ -1,6 +1,6 @@
 # Lab alternative when the cluster has no ReadWriteMany StorageClass.
 # Creates a StorageClass named efs-sc so values-215.yaml, values-cutover.yaml,
-# and values-216-external.yaml apply unchanged. Do not install this and the
+# values-215-external.yaml, and values-216-external.yaml apply unchanged. Do not install this and the
 # AWS EFS CSI class with the same name.
 # Replace NODE_NAME and the device path. Do not commit a real node or volume id.
 apiVersion: v1

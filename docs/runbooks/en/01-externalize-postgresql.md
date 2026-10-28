@@ -1,8 +1,12 @@
 # Externalize PostgreSQL (10 → 15) in-cluster
 
-Same procedure as `website/docs/externalize-postgresql.md`. On Git Bash, [01-bis-externalize-postgresql-windows.md](01-bis-externalize-postgresql-windows.md) only adds `MSYS_NO_PATHCONV=1`.
+Same procedure as `website/docs/externalize-postgresql.md`. On Git Bash: [01-bis-externalize-postgresql-windows.md](01-bis-externalize-postgresql-windows.md) only adds `MSYS_NO_PATHCONV=1`.
 
-GitOps writes the Secret. Do not `oc patch` `system-database` or the APIManager. Copy the user and password into Vault (`secret/hub/3scale-postgresql`). ExternalSecret builds the URL with `urlquery`.
+GitOps writes the Secret. Do not `oc patch` `system-database` or the APIManager. Copy user and password into Vault (`secret/hub/3scale-postgresql`). ExternalSecret builds the URL with `urlquery`.
+
+Before the first scale-down, record account, service, and application counts from the portal or API. Copy PVC size and requests/limits from the running embedded Deployments (`system-postgresql`, `system-redis`, `backend-redis`). Set them in `threescale.storage.databaseSize` and `threescale.resources` before the first `/values-cutover.yaml` sync. Do not copy the guide example 1Gi or the 32Gi Redis limit. During the window one extra PostgreSQL and two Redis instances coexist; the embedded PVCs still occupy disk.
+
+`system-storage` is not in the dump. Zync stays internal: `zync-database` returns to 1 when replicas are restored.
 
 ## Variables
 
@@ -17,14 +21,14 @@ oc get deploy -n "$OPERATOR_NAMESPACE" -o name
 
 On CSV 0.12 and 0.13 the operator Deployment is `threescale-operator-controller-manager-v2`. The name can change.
 
-## 1. Scale down, leave embedded PostgreSQL at 1
+## 1. Scale to 0 and leave embedded PostgreSQL at 1
 
 ```bash
 oc scale deployment threescale-operator-controller-manager-v2 -n "$OPERATOR_NAMESPACE" --replicas=0
 oc scale deployment/{system-memcache,zync-database,apicast-production,apicast-staging,backend-cron,backend-listener,backend-worker,backend-redis,system-app,system-redis,system-sidekiq,system-searchd,zync,zync-que} --replicas=0
 ```
 
-## 2. Dump, checksum, and permissions
+## 2. Dump, checksum, and file permissions
 
 ```bash
 POSTGRES_POD=$(oc get pods -l deployment=system-postgresql -o jsonpath='{.items[0].metadata.name}')
@@ -35,7 +39,7 @@ wc -c ./db_dump.backup
 chmod 600 ./db_dump.backup
 ```
 
-Compare the checksum after every later `oc cp`. Delete the dump when finished. Do not commit it.
+Compare the checksum after every `oc cp`. Delete the dump when finished. Do not commit it.
 
 ## 3. Deploy PostgreSQL 15
 
@@ -64,11 +68,11 @@ oc exec -n "$DB_NAMESPACE" "$EXT_POD" -- psql -U postgres -d system -c \
 
 Compare `n_live_tup` with the embedded database. Run `ANALYZE` first.
 
-## 5. Scale back
+## 5. Scale back up
 
-Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Scale embedded Redis back up for the next cycle. Scale embedded `system-postgresql` to 0 and **keep** the Deployment, Service, and PVC until 2.16 is accepted.
+Restore replicas from `$HOME/3scale-replicas-before-cutover.json`. The operator does not raise `system-app` or `system-sidekiq` from 0; scale those two from the JSON. Scale embedded Redis back up for the next cycle. Scale embedded `system-postgresql` to 0 and **keep** its Deployment, Service, and PVC until `system-app-pre` succeeds on 2.16. The official guide deletes those resources at the end of the chapter; this procedure does not.
 
-The smoke test runs after the Redis cycle, still on `threescale-2.15`.
+Stay on `/values-cutover.yaml` until the Redis cycle finishes. Secrets in namespace `3scale` still point at the embedded databases. The 2.15 verification against the restore is after `/values-215-external.yaml`.
 
 ## Rollback
 

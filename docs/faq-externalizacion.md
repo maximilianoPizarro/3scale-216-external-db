@@ -47,8 +47,8 @@ oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{
 ## ¿Qué más hay que administrar?
 
 - Ventana de mantenimiento: 3scale **abajo** durante dump/restore.
-- Redis en modo restore (`save ""`, `appendonly no`) solo para copiar `dump.rdb`. Después hay que pasar a persistencia (`overlays/*-persist` o `redis-config-persist`); si no, un restart pierde datos.
-- Copiar requests/limits reales de 2.15. No asumir el límite 32Gi de Redis que aparece en la guía.
+- Redis en modo restore (`save ""`, `appendonly no`) solo para copiar `dump.rdb`. Después pasar a `/values-215-external.yaml` (`configMode: persist`) antes de devolver tráfico; si no, un restart pierde datos. El canal 2.16 es `/values-216-external.yaml`.
+- Copiar requests/limits reales de 2.15 (`threescale.resources` y `databaseSize`). No asumir el límite 32Gi de Redis que aparece en la guía.
 - Backups: `pg_dump` + snapshots de volumen; Redis `SAVE` / `dump.rdb` / AOF + snapshots.
 - Red Hat no soporta Redis Cluster ni un diseño oficial de HA/zero-downtime. Sentinel queda como referencia. Este paquete replica el modelo Deployment+PVC de 2.15.
 - NetworkPolicy, pull secret de `registry.redhat.io`, SCC/PSA, StorageClass RWO.
@@ -56,9 +56,9 @@ oc get deploy -n 3scale-db -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{
 
 ## ¿Se puede probar en OpenShift 4.19 si el cluster a migrar está en un minor menor?
 
-Sí, para validar 2.16 con BDD self-managed. 2.16 soporta 4.14 y 4.16–4.19 (4.20 a partir de 2.16.2). La externalización no depende del minor.
+Sí, para validar 2.16 con BDD self-managed. La guía de upgrade de 2.16 lista hoy 4.12, 4.14, 4.16–4.20. 4.13 y 4.15 no están. La externalización no depende del minor.
 
-En el cluster que se va a migrar, confirmar que el OCP actual entra en la matriz de **2.15 y 2.16**. Secuencia: último micro de 2.15 → externalizar PG 10→15 y Redis 6→7 **en 2.15** → operator 2.16 → upgrade de OCP después, según matriz.
+En el cluster que se va a migrar, confirmar que el OCP actual entra en la matriz de **2.15 y 2.16**. Si la Subscription está en aprobación manual, aprobar cada InstallPlan. Secuencia: último micro de 2.15 → externalizar PG 10→15 y Redis 6→7 **en 2.15** → verificar 2.15 sobre el restore → operator 2.16 → upgrade de OCP después, según matriz. Un operador de APIcast aparte es otra ventana.
 
 El hardware del laboratorio no tiene que coincidir con producción. Ver [docs/lab/dimensionamiento-ocp419.md](lab/dimensionamiento-ocp419.md).
 

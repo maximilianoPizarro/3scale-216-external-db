@@ -135,12 +135,16 @@ spec:
             timeoutSeconds: 1
             failureThreshold: 3
           resources:
+            {{- with $.Values.threescale.resources.redis }}
+            {{- toYaml . | nindent 12 }}
+            {{- else }}
             limits:
               cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
               memory: 512Mi
+            {{- end }}
           volumeMounts:
             - name: data
               mountPath: /var/lib/redis/data

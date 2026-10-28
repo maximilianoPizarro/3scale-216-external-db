@@ -4,6 +4,10 @@ Esta página es el mismo procedimiento que `docs/runbooks/01-externalize-postgre
 
 GitOps escribe el Secret de conexión. No hacer `oc patch` de `system-database` ni del APIManager. Argo pisa ese parche. Copiar el usuario y la contraseña embebidos a Vault (`secret/hub/3scale-postgresql`). ExternalSecret arma la URL con `urlquery`, así la contraseña no queda en el historial del shell.
 
+Antes del primer scale-down, anotar desde el portal o la API la cantidad de cuentas, servicios y aplicaciones. Copiar el tamaño de los PVC y los requests/limits de los Deployments embebidos que están corriendo (`system-postgresql`, `system-redis`, `backend-redis`). Ponerlos en `threescale.storage.databaseSize` y `threescale.resources` antes del primer sync de `/values-cutover.yaml`. No copiar el 1Gi ni el límite 32Gi de Redis del ejemplo de la guía. Durante la ventana conviven un PostgreSQL más y dos Redis; los PVC embebidos siguen ocupando disco.
+
+`system-storage` no entra en el dump. Zync sigue interno: `zync-database` vuelve a 1 al restaurar réplicas.
+
 ## Variables
 
 ```bash
@@ -49,7 +53,7 @@ Anotar checksum y tamaño. Después de cada `oc cp` posterior, volver a correr `
 
 ## 3. Desplegar PostgreSQL 15
 
-Poner `extraValueFiles` del Pattern en `/values-cutover.yaml`. Ese archivo enciende el chart `external-db` y deja `externalComponents` en false. Esperar `system-postgresql-external` en `1/1`. El mismo chart levanta Redis 7 en `configMode: restore`. Cargar `dump.rdb` en el procedimiento de Redis antes de `/values-216-external.yaml`.
+Poner `extraValueFiles` del Pattern en `/values-cutover.yaml`. Ese archivo enciende el chart `external-db` y deja `externalComponents` en false. Esperar `system-postgresql-external` en `1/1`. El mismo chart levanta Redis 7 en `configMode: restore`. Cargar `dump.rdb` en el procedimiento de Redis antes de `/values-215-external.yaml`.
 
 Una NetworkPolicy del chart permite TCP 5432 y 6379 solo desde los namespaces `3scale` y `3scale-db`.
 
@@ -80,15 +84,15 @@ Comparar `n_live_tup` con la misma consulta en la base embebida. `ANALYZE` tiene
 
 ## 5. Apuntar 3scale a la base externa
 
-Quedarse en `/values-cutover.yaml` hasta terminar el ciclo de Redis. Los Secrets del namespace `3scale` siguen apuntando a las bases embebidas. Después de cargar Redis, `/values-216-external.yaml` pone `externalComponents` y ExternalSecret reescribe las URL. No parchearlos a mano en el medio.
+Quedarse en `/values-cutover.yaml` hasta terminar el ciclo de Redis. Los Secrets del namespace `3scale` siguen apuntando a las bases embebidas. Después de cargar Redis y correr `BGREWRITEAOF`, `/values-215-external.yaml` pone `externalComponents` y ExternalSecret reescribe las URL. No parchearlos a mano en el medio. El canal `threescale-2.16` es el archivo siguiente.
 
 ## 6. Volver a escalar la aplicación
 
 Restaurar las réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador 3scale no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Volver a escalar el Redis embebido a su conteo anterior para poder volcarlo en el ciclo de Redis.
 
-Escalar `system-postgresql` embebido a 0. **Conservar** su Deployment, Service y PVC hasta aceptar el upgrade a 2.16. Borrarlos elimina el camino de rollback.
+Escalar `system-postgresql` embebido a 0. **Conservar** su Deployment, Service y PVC hasta que `system-app-pre` termine bien en 2.16. La guía oficial borra esos recursos al final del capítulo; en este procedimiento no. Borrarlos elimina el camino de rollback hasta ese Job.
 
-Después correr el ciclo de Redis. El smoke test (login de admin, alta y lectura de una cuenta, una llamada por APIcast, Sidekiq sin atasco) es después de los dos ciclos, todavía en el canal `threescale-2.15`.
+Después correr el ciclo de Redis. La verificación de 2.15 contra el restore (Admin Portal, Developer Portal, cuenta nueva, APIcast, gráfico de analíticas histórico) es después de `/values-215-external.yaml`.
 
 !!! danger "No commitear secrets ni dumps"
     Nunca commitear `*-secret.yaml`, `*.backup` ni `*.rdb`.

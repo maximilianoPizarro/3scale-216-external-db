@@ -4,6 +4,10 @@ Procedimiento único, el mismo que `website/docs/externalize-postgresql.es.md`. 
 
 GitOps escribe el Secret. No hacer `oc patch` de `system-database` ni del APIManager. Copiar usuario y contraseña a Vault (`secret/hub/3scale-postgresql`). ExternalSecret arma la URL con `urlquery`.
 
+Antes del primer scale-down, anotar desde el portal o la API la cantidad de cuentas, servicios y aplicaciones. Copiar el tamaño de los PVC y los requests/limits de los Deployments embebidos que están corriendo (`system-postgresql`, `system-redis`, `backend-redis`). Ponerlos en `threescale.storage.databaseSize` y `threescale.resources` antes del primer sync de `/values-cutover.yaml`. No copiar el 1Gi ni el límite 32Gi de Redis del ejemplo de la guía. Durante la ventana conviven un PostgreSQL más y dos Redis; los PVC embebidos siguen ocupando disco.
+
+`system-storage` no entra en el dump. Zync sigue interno: `zync-database` vuelve a 1 al restaurar réplicas.
+
 ## Variables
 
 ```bash
@@ -66,9 +70,9 @@ Comparar `n_live_tup` con la base embebida. `ANALYZE` va primero.
 
 ## 5. Volver a escalar
 
-Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Volver a subir Redis embebido para el ciclo siguiente. Escalar `system-postgresql` embebido a 0 y **conservar** Deployment, Service y PVC hasta aceptar 2.16.
+Restaurar réplicas desde `$HOME/3scale-replicas-before-cutover.json`. El operador no sube `system-app` ni `system-sidekiq` desde 0; escalar esos dos desde el JSON. Volver a subir Redis embebido para el ciclo siguiente. Escalar `system-postgresql` embebido a 0 y **conservar** Deployment, Service y PVC hasta que `system-app-pre` termine bien en 2.16. La guía oficial borra esos recursos al final del capítulo; en este procedimiento no.
 
-El smoke test es después del ciclo de Redis, todavía en `threescale-2.15`.
+Quedarse en `/values-cutover.yaml` hasta terminar el ciclo de Redis. Los Secrets del namespace `3scale` siguen apuntando a las bases embebidas. La verificación de 2.15 contra el restore es después de `/values-215-external.yaml`.
 
 ## Rollback
 

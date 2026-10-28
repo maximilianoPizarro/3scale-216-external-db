@@ -35,7 +35,7 @@ On this branch, install with a Pattern CR. OpenShift GitOps comes from the Valid
 
 Two Pattern scenarios stay separate:
 
-- **2.15 → 2.16 migration.** Needs channel `threescale-2.15` and a ReadWriteMany StorageClass named `efs-sc`. Apply `examples/pattern-cr/hub-215.yaml`. During the window, `extraValueFiles` is `/values-cutover.yaml`. After the portal checks, switch it to `/values-216-external.yaml`.
+- **2.15 → 2.16 migration.** Needs channel `threescale-2.15` and a ReadWriteMany StorageClass named `efs-sc`. Apply `examples/pattern-cr/hub-215.yaml`. During the window, `extraValueFiles` is `/values-cutover.yaml`, then `/values-215-external.yaml` after RDB load. After the 2.15 verification, switch it to `/values-216-external.yaml` (channel only).
 - **Direct 2.16 on one node**, with no `threescale-2.15` channel and no ReadWriteMany volume. Apply `examples/pattern-cr/hub-216-singlenode.yaml`. That file is not a 2.15 migration.
 
 ```bash

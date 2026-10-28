@@ -96,3 +96,19 @@ threescale:
     databaseClass: gp3-csi
     databaseSize: 1Gi
     systemStorageClass: ""
+  # Lab defaults. Before the first cutover sync, copy storage and resources from the
+  # running 2.15 embedded Deployments. Do not copy the 32Gi Redis limit from the guide example.
+  resources:
+    postgresql:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        memory: 2Gi
+    redis:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 2Gi

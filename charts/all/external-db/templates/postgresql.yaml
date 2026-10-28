@@ -103,11 +103,15 @@ spec:
             timeoutSeconds: 5
             failureThreshold: 3
           resources:
+            {{- with .Values.threescale.resources.postgresql }}
+            {{- toYaml . | nindent 12 }}
+            {{- else }}
             limits:
               memory: 2Gi
             requests:
               cpu: 250m
               memory: 512Mi
+            {{- end }}
           volumeMounts:
             - mountPath: /var/lib/pgsql/data
               name: postgresql-data-external

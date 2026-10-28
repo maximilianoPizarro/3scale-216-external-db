@@ -42,7 +42,7 @@ images:
     digest: sha256:<digest>
 ```
 
-Ajustar `storage` de los PVC y los `resources` de Redis copiando los valores reales de la instalación 2.15. La guía oficial documenta un límite de 32Gi en Redis; no copiarlo si el despliegue actual usa menos.
+Ajustar `storage` de los PVC y los `resources` de PostgreSQL y Redis copiando los valores reales de la instalación 2.15 que está corriendo. En el Pattern, esos valores van en `threescale.storage.databaseSize` y `threescale.resources` antes del primer sync de cutover. La guía oficial documenta un límite de 32Gi en Redis; no copiarlo si el despliegue actual usa menos.
 
 ## Secret PostgreSQL
 

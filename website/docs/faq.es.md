@@ -24,7 +24,7 @@ Anclar **digest SHA-256** del catálogo de Red Hat. No anclar el tag flotante.
 
 ## Redis restore vs persistencia
 
-Correr Redis en modo restore (`save ""`, `appendonly no`) solo durante el cutover, y solo porque `values-cutover.yaml` pone `allowRestore: true`. Después pasar a `/values-216-external.yaml` (`configMode: persist`). Sin ese paso, un restart pierde datos.
+Correr Redis en modo restore (`save ""`, `appendonly no`) solo durante el cutover, y solo porque `values-cutover.yaml` pone `allowRestore: true`. Antes de devolver tráfico, pasar a `/values-215-external.yaml` (`configMode: persist`). El canal 2.16 es `/values-216-external.yaml`. Sin el paso a persist, un restart pierde datos.
 
 Checklist de día 2 (backups, digest, path de GitOps): [Operación día 2](day-2.es.md).
 
@@ -42,7 +42,7 @@ Los pods `system-searchd-manticore-reindex` que fallaron antes de que `system-ap
 
 ## ¿Se puede probar en OpenShift 4.19 si producción está en un minor menor?
 
-Sí. Usar 4.19 para validar 2.16 con BDD self-managed. En el cluster a migrar, confirmar que el OCP actual entra en la matriz de **2.15 y 2.16**. Secuencia: último micro de 2.15 → externalizar PostgreSQL y Redis **en 2.15** → operador 3scale 2.16 → upgrade de OpenShift después.
+Sí. Usar 4.19 para validar 2.16 con BDD self-managed. En el cluster a migrar, confirmar que el OCP actual entra en la matriz de **2.15 y 2.16** (hoy: 4.12, 4.14, 4.16–4.20; 4.13 y 4.15 no están). Si la Subscription está en aprobación manual, aprobar cada InstallPlan. Secuencia: último micro de 2.15 → externalizar PostgreSQL y Redis **en 2.15** → verificar 2.15 sobre el restore → operador 3scale 2.16 → upgrade de OpenShift después. Un operador de APIcast aparte es otra ventana.
 
 ## ¿Dónde está el procedimiento completo?
 

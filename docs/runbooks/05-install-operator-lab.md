@@ -39,9 +39,14 @@ oc -n 3scale delete pvc system-storage
 
 Cuando el APIManager esté healthy, seguir [01-externalize-postgresql.md](01-externalize-postgresql.md) y [02-externalize-redis.md](02-externalize-redis.md).
 
-## 3. Canal 2.16 (solo después de externalizar)
+## 3. Values después de externalizar
+
+Tras cargar Redis y `BGREWRITEAOF`, pasar a `/values-215-external.yaml` (2.15 sobre las bases externas). Tras la verificación de 2.15 y el dump fresco, pasar a `/values-216-external.yaml` (solo el canal):
 
 ```bash
+oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
+  -p '{"spec":{"extraValueFiles":["/values-215-external.yaml"]}}'
+# after 2.15 verification and fresh dump:
 oc patch pattern 3scale-216-external-db -n openshift-operators --type merge \
   -p '{"spec":{"extraValueFiles":["/values-216-external.yaml"]}}'
 ```

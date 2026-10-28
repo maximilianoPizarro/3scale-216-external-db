@@ -1,0 +1,29 @@
+# After Redis RDB load and BGREWRITEAOF, before returning traffic on 2.15.
+# Channel stays threescale-2.15. 3scale reads PostgreSQL 15 and Redis 7.
+# Redis auth and configMode persist. No allowRestore.
+# Point extraValueFiles here after cutover restore and before values-216-external.yaml.
+# Child Applications only inherit files listed in global.extraValueFiles.
+global:
+  extraValueFiles:
+    - /values-215-external.yaml
+
+clusterGroup:
+  subscriptions:
+    threescale:
+      channel: threescale-2.15
+
+threescale:
+  externalDb:
+    enabled: true
+  redis:
+    auth:
+      enabled: true
+    configMode: persist
+  externalComponents:
+    system:
+      database: true
+      redis: true
+    backend:
+      redis: true
+  storage:
+    systemStorageClass: efs-sc

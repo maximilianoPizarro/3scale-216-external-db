@@ -1,3 +1,5 @@
+# Lab example: 1Gi. Before the first apply, set storage to the request of the running 2.15 PVC.
+# Do not copy the 1Gi or 32Gi figures from the Red Hat example.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:

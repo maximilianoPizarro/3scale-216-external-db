@@ -1,3 +1,4 @@
+# After BGREWRITEAOF, before 3scale reads these instances. appendonly yes. Channel stays 2.15.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: 3scale-db

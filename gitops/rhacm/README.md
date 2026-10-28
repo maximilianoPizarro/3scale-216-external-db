@@ -65,6 +65,8 @@ oc get applications -n openshift-gitops | grep threescale
 
 Si no hay Applications: cluster Available con el label; binding `global`; GitOpsCluster con el cluster en Argo CD; Role `applicationset-placementdecisions`.
 
-## Persistencia Redis
+## Persistencia Redis y canal
 
-En `gitops/rhacm/external-db/applicationset-threescale-external-db-acm.yaml`, `path: kustomize/overlays/prod-persist` (lab: `kustomize/overlays/lab` / `lab-persist`). `prune: false`.
+El ApplicationSet de bases nace en `kustomize/overlays/prod` (restore: `save ""`, `appendonly no`). Tras `BGREWRITEAOF` y `aof_rewrite_in_progress:0`, y antes de devolver tráfico, cambiar ese path a `kustomize/overlays/prod-persist` (lab: `lab` y después `lab-persist`) y reiniciar los dos Deployments de Redis. El canal sigue en 2.15.
+
+`externalComponents` es `kustomize/overlays/apimanager-external`, todavía en 2.15. `kustomize/overlays/operator-216` es solo el canal, después de verificar el restore. `prune: false`. No borrar los PVC embebidos hasta que `system-app-pre` termine bien.

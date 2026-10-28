@@ -1,0 +1,22 @@
+# 3scale 2.15 reads the external databases. Does not change the operator channel.
+# Apply after Redis is on appendonly yes (lab-persist or prod-persist) and before operator-216.
+# Edit wildcardDomain in ../lab-apimanager before the first APIManager apply.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../lab-apimanager
+patches:
+  - target:
+      kind: APIManager
+      name: apimanager
+    patch: |-
+      - op: add
+        path: /spec/externalComponents
+        value:
+          system:
+            database: true
+            redis: true
+          backend:
+            redis: true
+      - op: remove
+        path: /spec/system/database

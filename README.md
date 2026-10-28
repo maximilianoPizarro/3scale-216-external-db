@@ -21,10 +21,10 @@ Validated in lab — see [tested versions](website/docs/tested-versions.md). Ada
 
 Use one guide on a cluster. Do not install both on the same cluster: they share the namespaces `vault`, `external-secrets`, `3scale`, and `3scale-db`, and the same `ClusterSecretStore` name.
 
-| | Validated Pattern | Kustomize 1.0.0 |
-|--|-------------------|-----------------|
+| | Validated Pattern | Kustomize |
+|--|-------------------|-----------|
 | Where | This branch (`main`) | Tag [`v1.0.0`](https://github.com/maximilianoPizarro/3scale-216-external-db/releases/tag/v1.0.0) |
-| Docs | [validated-pattern](https://maximilianopizarro.github.io/3scale-216-external-db/validated-pattern/) | [1.0.0](https://maximilianopizarro.github.io/3scale-216-external-db/1.0.0/) |
+| Docs | [validated-pattern](https://maximilianopizarro.github.io/3scale-216-external-db/validated-pattern/) | [kustomize](https://maximilianopizarro.github.io/3scale-216-external-db/kustomize/) |
 | Install | Validated Patterns Operator and a Pattern CR | Kustomize overlays, plus Helm for Vault |
 | Secrets | Vault and External Secrets, created by the Pattern | Vault chart `hashicorp-vault` 0.1.10 and the External Secrets Operator Subscription (`stable-v1`) |
 | Images | SHA-256 digests in `values-global.yaml` | Same digests, pinned on the three database Deployments |
@@ -46,11 +46,11 @@ cp values-secret.yaml.template ~/values-secret-3scale-216-external-db.yaml
 
 Sequence: [Migration sequence](https://maximilianopizarro.github.io/3scale-216-external-db/validated-pattern/sequence/).
 
-### Kustomize 1.0.0
+### Kustomize
 
 Tag `v1.0.0` is the Kustomize and GitOps guide. It has no Pattern CR. Operators and the external databases come from Kustomize. Vault is the Helm chart. External Secrets is an OLM Subscription. Passwords stay outside git.
 
-Check out that tag and follow [the 1.0.0 site](https://maximilianopizarro.github.io/3scale-216-external-db/1.0.0/). The `kustomize/` tree on `main` is not that release.
+Check out that tag and follow [the Kustomize site](https://maximilianopizarro.github.io/3scale-216-external-db/kustomize/). The `kustomize/` tree on `main` is not that release.
 
 ## Repository layout
 

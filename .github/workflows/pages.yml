@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # The 1.0.0 site is built from tag v1.0.0. A depth-1 checkout has neither the tag nor that commit.
+          # The kustomize site is built from tag v1.0.0. A depth-1 checkout has neither the tag nor that commit.
           fetch-depth: 0
 
       - name: Setup Python

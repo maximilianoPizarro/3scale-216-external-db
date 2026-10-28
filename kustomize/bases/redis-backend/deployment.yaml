@@ -23,6 +23,7 @@ spec:
         - name: backend-redis-external
           image: registry.redhat.io/rhel9/redis-7
           imagePullPolicy: IfNotPresent
+          # Lab example. Copy requests and limits from the running 2.15 Deployment before the first apply.
           resources:
             limits:
               cpu: "1"

@@ -12,20 +12,43 @@ Imágenes de referencia (anclar digest en cada entorno):
 ## Operador 3scale (laboratorio)
 
 ```bash
-oc apply -k kustomize/overlays/lab-operator
-oc apply -k kustomize/overlays/lab-efs          # RWX (EFS); fileSystemId en el overlay
-oc apply -k kustomize/overlays/lab-apimanager   # wildcardDomain + efs-sc
-oc apply -k kustomize/overlays/operator-216     # solo después de externalizar
+oc apply -k kustomize/overlays/lab-operator      # canal threescale-2.15
+oc apply -k kustomize/overlays/lab-efs           # RWX (EFS); fileSystemId en el overlay
+oc apply -k kustomize/overlays/lab-apimanager    # wildcardDomain + efs-sc, bases embebidas
 ```
+
+En la ventana, con 3scale todavía en las bases embebidas:
+
+```bash
+oc apply -k kustomize/overlays/lab              # Redis save "" / appendonly no, para cargar dump.rdb
+```
+
+Después de `BGREWRITEAOF` y `aof_rewrite_in_progress:0`, y antes de devolver tráfico:
+
+```bash
+oc apply -k kustomize/overlays/lab-persist      # appendonly yes; el canal sigue en 2.15
+oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/system-redis-external
+oc apply -k kustomize/overlays/apimanager-external
+```
+
+`apimanager-external` pone `externalComponents` y saca el PostgreSQL embebido del spec. No cambia la Subscription. Verificar 2.15 contra el restore (Admin Portal, Developer Portal, cuenta, APIcast, gráfico de analíticas histórico) y tomar el dump fresco. Recién ahí:
+
+```bash
+oc apply -k kustomize/overlays/operator-216     # solo el canal threescale-2.16
+```
+
+No borrar los Deployment ni los PVC embebidos al cerrar el restore. Siguen siendo el rollback hasta que `system-app-pre` termina bien. El procedimiento de dump, restore y verificación está en `docs/runbooks/`.
 
 ## Overlays
 
 | Overlay | Uso |
 |---------|-----|
 | `overlays/lab` | Laboratorio AWS de ejemplo (`gp3-csi`), Redis en modo restore |
-| `overlays/lab-persist` | Mismo lab, Redis con `save` y AOF |
-| `overlays/prod` | Destino genérico; usa la StorageClass por defecto del cluster |
+| `overlays/lab-persist` | Mismo lab, Redis con `save` y AOF, todavía en 2.15 |
+| `overlays/apimanager-external` | APIManager con `externalComponents`, canal 2.15 |
+| `overlays/prod` | Destino genérico; usa la StorageClass por defecto del cluster, Redis en restore |
 | `overlays/prod-persist` | Destino genérico con persistencia Redis |
+| `overlays/operator-216` | Solo el canal `threescale-2.16`, después de la verificación en 2.15 |
 
 ```bash
 kustomize build kustomize/overlays/lab
@@ -42,7 +65,7 @@ images:
     digest: sha256:<digest>
 ```
 
-Ajustar `storage` de los PVC y los `resources` de PostgreSQL y Redis copiando los valores reales de la instalación 2.15 que está corriendo. En el Pattern, esos valores van en `threescale.storage.databaseSize` y `threescale.resources` antes del primer sync de cutover. La guía oficial documenta un límite de 32Gi en Redis; no copiarlo si el despliegue actual usa menos.
+Antes del primer `oc apply` de `lab` o `prod`, copiar `storage` de los PVC y los `resources` de PostgreSQL y Redis desde los Deployments 2.15 que están corriendo. Los manifiestos traen `1Gi` y `2Gi` / `512Mi` como ejemplo de laboratorio. El tamaño del PVC queda fijado en ese primer apply. La guía oficial documenta un límite de 32Gi en Redis; no copiarlo si el despliegue actual usa menos. En el Pattern, los mismos números van en `threescale.storage.databaseSize` y `threescale.resources`.
 
 ## Secret PostgreSQL
 
@@ -57,4 +80,4 @@ oc create secret generic system-database \
   -n 3scale-db
 ```
 
-El procedimiento de dump, restore y `externalComponents` está en `docs/runbooks/`.
+El procedimiento de dump, restore, verificación en 2.15 y cambio de canal está en `docs/runbooks/`.

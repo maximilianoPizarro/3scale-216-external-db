@@ -46,7 +46,11 @@ oc apply -k gitops/external-db
 
 Destino: `3scale-db`. `prune: false` para no borrar PVC.
 
-Tras el restore de Redis, en el ApplicationSet de BDD cambiar `redis-config.path` a `kustomize/bases/redis-config-persist`.
+Tras `BGREWRITEAOF` y `aof_rewrite_in_progress:0`, y antes de que 3scale lea esas instancias, cambiar `redis-config.path` a `kustomize/bases/redis-config-persist` y reiniciar los dos Deployments de Redis. El canal sigue en 2.15.
+
+Después, en el ApplicationSet del operador, cambiar el path de `apimanager` de `kustomize/overlays/lab-apimanager` a `kustomize/overlays/apimanager-external`. Eso pone `externalComponents` sin cambiar la Subscription. Verificar 2.15 contra el restore. El dump fresco va antes del canal.
+
+El canal es otro cambio: el path de `operator` pasa a `kustomize/overlays/operator-216` recién después de esa verificación. No borrar los Deployment ni los PVC embebidos hasta que `system-app-pre` termine bien.
 
 ## RHACM (hub)
 
@@ -65,6 +69,12 @@ No mezclar in-cluster (`gitops/`) y RHACM contra el mismo destino.
 oc apply -k kustomize/overlays/lab-operator
 oc apply -k kustomize/overlays/lab-efs
 oc apply -k kustomize/overlays/lab-apimanager
-# más tarde:
+# ventana, Redis en restore:
 oc apply -k kustomize/overlays/lab
+# tras BGREWRITEAOF, antes de devolver tráfico:
+oc apply -k kustomize/overlays/lab-persist
+oc -n 3scale-db rollout restart deployment/backend-redis-external deployment/system-redis-external
+oc apply -k kustomize/overlays/apimanager-external
+# tras la verificación en 2.15:
+oc apply -k kustomize/overlays/operator-216
 ```

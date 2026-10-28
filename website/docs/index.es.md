@@ -1,6 +1,6 @@
 # Migración 3scale 2.15 → 2.16
 
-Esta página es la guía del **Validated Pattern**. La versión **1.0.0** del selector es la guía de Kustomize y GitOps, con Vault y External Secrets y sin Pattern CR.
+Esta página es la guía del **Validated Pattern**. **Kustomize** en el selector es la guía de Kustomize y GitOps, con Vault y External Secrets y sin Pattern CR.
 
 Este repositorio está pensado para **administradores de OpenShift** y **SREs de plataforma** que operan 3scale in-cluster y deben pasar de 2.15 a 2.16. Procedimiento de producto y matriz soportada: [Migrating Red Hat 3scale API Management 2.16](https://docs.redhat.com/en/documentation/red_hat_3scale_api_management/2.16/html/migrating_red_hat_3scale_api_management/index).
 
